@@ -13,18 +13,21 @@ class DiscoverScreen extends StatelessWidget {
         source: 'VNExpress',
         time: '2 giờ trước',
         imageUrl: 'https://picsum.photos/400/250?random=7',
+        link: 'https://vnexpress.net/rss/tin-moi-nhat.rss',
       ),
       ArticleModel(
         title: 'ChatGPT và tương lai trí tuệ nhân tạo trong đời sống',
         source: 'Zing News',
         time: '5 giờ trước',
         imageUrl: 'https://picsum.photos/400/250?random=8',
+        link: 'https://zingnews.vn/',
       ),
       ArticleModel(
         title: 'Du lịch vũ trụ – khi giấc mơ ra ngoài không gian dần trở thành hiện thực',
         source: 'BBC Future',
         time: '1 ngày trước',
         imageUrl: 'https://picsum.photos/400/250?random=9',
+        link: 'https://www.bbc.com/future',
       ),
     ];
 
@@ -45,10 +48,7 @@ class DiscoverScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         title: const Text(
           'Khám phá',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         centerTitle: true,
       ),
@@ -57,24 +57,19 @@ class DiscoverScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔍 Ô tìm kiếm
             TextField(
               decoration: InputDecoration(
                 hintText: 'Tìm kiếm tin tức...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // 🏷️ Danh sách tag
             SizedBox(
               height: 40,
               child: ListView.builder(
@@ -88,31 +83,21 @@ class DiscoverScreen extends StatelessWidget {
                       color: Colors.green.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      tags[index],
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: Text(tags[index],
+                        style: const TextStyle(
+                            color: Colors.green, fontWeight: FontWeight.w600)),
                   );
                 },
               ),
             ),
-
             const SizedBox(height: 20),
-
             const Text(
               'Tin tức nổi bật',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 10),
-
-            // 📰 Danh sách bài viết đề xuất
             Column(
-              children:
-              deXuat.map((a) => ArticleCardHorizontal(article: a)).toList(),
+              children: deXuat.map((a) => ArticleCardHorizontal(article: a)).toList(),
             ),
           ],
         ),

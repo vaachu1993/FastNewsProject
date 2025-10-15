@@ -13,12 +13,14 @@ class BookmarkScreen extends StatelessWidget {
         source: 'Thanh Niên',
         time: 'Hôm qua',
         imageUrl: 'https://picsum.photos/400/250?random=10',
+        link: 'https://thanhnien.vn/',
       ),
       ArticleModel(
         title: 'Ứng dụng FastNews đạt 1 triệu lượt tải trên CH Play',
         source: 'FastNews Blog',
         time: '2 ngày trước',
         imageUrl: 'https://picsum.photos/400/250?random=11',
+        link: 'https://fastnews.vn/',
       ),
     ];
 
@@ -29,10 +31,7 @@ class BookmarkScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         title: const Text(
           'Tin đã lưu',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         centerTitle: true,
       ),
