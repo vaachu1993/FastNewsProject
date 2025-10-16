@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/article_model.dart';
 import '../widgets/article_card_horizontal.dart';
-import '../services/rss_service.dart'; // ← dùng để tải tin từ RSS
+import '../services/rss_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,11 +11,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int danhMucDuocChon = 0;
+  int selectedCategory = 0;
   bool isLoading = true;
-  List<ArticleModel> tinMoiNhat = [];
+  List<ArticleModel> latestNews = [];
 
-  final List<String> danhMuc = [
+  final List<String> categories = [
     'Tất cả',
     'Chính trị',
     'Công nghệ',
@@ -27,13 +27,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _taiTinMoiNhat();
+    _loadNews();
   }
 
-  Future<void> _taiTinMoiNhat() async {
-    final news = await RssService.fetchLatestNews(); // 🔹 gọi RSS service
+  Future<void> _loadNews() async {
+    final news = await RssService.fetchLatestNews();
     setState(() {
-      tinMoiNhat = news;
+      latestNews = news;
       isLoading = false;
     });
   }
@@ -43,14 +43,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        elevation: 0,
         backgroundColor: Colors.white,
+        elevation: 0,
         title: Row(
           children: [
             Image.network(
               'https://img.icons8.com/color/48/news.png',
-              width: 30,
-              height: 30,
+              width: 28,
+              height: 28,
             ),
             const SizedBox(width: 8),
             const Text(
@@ -62,72 +62,134 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.green),
-            onPressed: _taiTinMoiNhat, // 🔹 làm mới tin tức
-          ),
-          const Icon(Icons.notifications_outlined, color: Colors.black87),
-          const SizedBox(width: 12),
-          const CircleAvatar(
+        actions: const [
+          Icon(Icons.settings_outlined, color: Colors.black87),
+          SizedBox(width: 10),
+          Icon(Icons.notifications_outlined, color: Colors.black87),
+          SizedBox(width: 10),
+          CircleAvatar(
             radius: 15,
             backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=12'),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
         ],
       ),
-
-      // 📰 Nội dung trang
       body: isLoading
-          ? const Center(
-        child: CircularProgressIndicator(color: Colors.green),
-      )
+          ? const Center(child: CircularProgressIndicator(color: Colors.green))
           : RefreshIndicator(
-        onRefresh: _taiTinMoiNhat,
+        onRefresh: _loadNews,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🧠 Tiêu đề
-              const Text(
-                'Tin mới nhất',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              // 🔥 Tiêu đề Trending News
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Tin nổi bật',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text(
+                      'Xem tất cả',
+                      style: TextStyle(color: Colors.green),
+                    ),
+                  ),
+                ],
+              ),
+
+              // 🏷️ Danh mục
+              SizedBox(
+                height: 40,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final bool isSelected = selectedCategory == index;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() => selectedCategory = index);
+                      },
+                      child: Container(
+                        margin:
+                        const EdgeInsets.only(right: 10, bottom: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.green
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          categories[index],
+                          style: TextStyle(
+                            color:
+                            isSelected ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
+              ),
+              const SizedBox(height: 14),
+
+              // 📰 Danh sách tin nổi bật (trượt ngang)
+              SizedBox(
+                height: 320,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: latestNews.length.clamp(0, 5),
+                  itemBuilder: (context, index) {
+                    return Container(
+                      width: 300,
+                      margin: const EdgeInsets.only(right: 14),
+                      child:
+                      ArticleCardHorizontal(article: latestNews[index]),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // 🌍 Global Stories
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Tin toàn cầu',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text(
+                      'Xem tất cả',
+                      style: TextStyle(color: Colors.green),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
 
-              // 🔥 Danh sách tin mới nhất từ RSS
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: tinMoiNhat.length,
-                itemBuilder: (context, index) {
-                  return ArticleCardHorizontal(
-                    article: tinMoiNhat[index],
-                  );
-                },
-              ),
-
-              const SizedBox(height: 20),
-              const Text(
-                'Tin thế giới',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // 🔹 Ví dụ phần tin cố định cũ của bạn (nếu muốn giữ lại)
+              // Danh sách tin dọc (Global Stories)
               Column(
-                children: tinMoiNhat.take(3).map((a) {
-                  return ArticleCardHorizontal(article: a);
-                }).toList(),
+                children: latestNews
+                    .skip(5)
+                    .take(5)
+                    .map((a) => ArticleCardHorizontal(article: a))
+                    .toList(),
               ),
             ],
           ),

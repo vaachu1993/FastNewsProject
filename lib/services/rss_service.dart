@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import '../models/article_model.dart';
@@ -16,19 +17,43 @@ class RssService {
       try {
         final response = await http.get(Uri.parse(url));
         if (response.statusCode == 200) {
-          final document = XmlDocument.parse(response.body);
+          // 🩵 Đảm bảo UTF8
+          final utf8Body = utf8.decode(response.bodyBytes);
+          final document = XmlDocument.parse(utf8Body);
           final items = document.findAllElements('item');
 
-          for (var item in items.take(8)) { // lấy 8 bài đầu mỗi nguồn
+          for (var item in items.take(8)) {
             final title = item.findElements('title').first.text;
             final link = item.findElements('link').first.text;
             final pubDate = item.findElements('pubDate').isNotEmpty
                 ? item.findElements('pubDate').first.text
                 : 'Không rõ thời gian';
-            final description = item.findElements('description').isNotEmpty
-                ? item.findElements('description').first.text
-                : '';
-            final imageUrl = _extractImageUrl(description);
+
+            // 🧠 Lấy nội dung mô tả hoặc content:encoded
+            String description = '';
+            if (item.findElements('content:encoded').isNotEmpty) {
+              description = item.findElements('content:encoded').first.text;
+            } else if (item.findElements('description').isNotEmpty) {
+              description = item.findElements('description').first.text;
+            }
+
+            // 🧹 Làm sạch HTML & quảng cáo
+            description = description
+                .replaceAll(RegExp(r'<(script|style)[^>]*>.*?</\1>', dotAll: true), '')
+                .replaceAll(RegExp(r'<img[^>]*>', caseSensitive: false), '')
+                .replaceAll(RegExp(r'<a[^>]*>', caseSensitive: false), '')
+                .replaceAll('</a>', '')
+                .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+                .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
+                .replaceAll('&nbsp;', ' ')
+                .replaceAll('&amp;', '&')
+                .replaceAll('&quot;', '"')
+                .replaceAll('&lt;', '<')
+                .replaceAll('&gt;', '>')
+                .trim();
+
+            // 🖼 Tìm ảnh minh họa (nếu có)
+            final imageUrl = _extractImageUrl(item.toXmlString());
 
             allArticles.add(ArticleModel(
               title: title,
@@ -36,6 +61,7 @@ class RssService {
               time: pubDate,
               imageUrl: imageUrl,
               link: link,
+              description: description,
             ));
           }
         }
@@ -47,9 +73,9 @@ class RssService {
     return allArticles;
   }
 
-  static String _extractImageUrl(String description) {
+  static String _extractImageUrl(String text) {
     final regex = RegExp(r'<img.*?src="(.*?)"', caseSensitive: false);
-    final match = regex.firstMatch(description);
+    final match = regex.firstMatch(text);
     return match != null ? match.group(1)! : 'https://picsum.photos/400/250';
   }
 
