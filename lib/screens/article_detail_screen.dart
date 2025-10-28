@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
+import '../utils/date_formatter.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final ArticleModel article;
@@ -278,6 +279,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> with TickerPr
 
     return content.isNotEmpty ? content : 'Không thể tải nội dung đầy đủ từ nguồn gốc. Vui lòng nhấn "Đọc bài gốc" để xem toàn bộ bài viết.';
   }
+
   String _stripHtmlTags(String htmlText) {
     String text = htmlText
         .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
@@ -436,23 +438,20 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> with TickerPr
                         ),
                         const SizedBox(height: 12),
 
-                        // Thông tin thời gian và lượt xem
+                        // Thông tin ngày đăng
                         Row(
                           children: [
-                            const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                            const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Ngày đăng:',
+                              style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
                             const SizedBox(width: 4),
                             Text(
-                              widget.article.time,
+                              DateFormatter.formatDateTime(widget.article.time),
                               style: const TextStyle(color: Colors.grey, fontSize: 13),
                             ),
-                            const SizedBox(width: 16),
-                            const Icon(Icons.visibility, size: 16, color: Colors.grey),
-                            const SizedBox(width: 4),
-                            const Text('123K', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                            const SizedBox(width: 16),
-                            const Icon(Icons.favorite_border, size: 16, color: Colors.grey),
-                            const SizedBox(width: 4),
-                            const Text('567', style: TextStyle(color: Colors.grey, fontSize: 13)),
                           ],
                         ),
                         const SizedBox(height: 24),
@@ -559,3 +558,4 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> with TickerPr
     );
   }
 }
+
