@@ -62,7 +62,7 @@ class RssService {
                 ? item.findElements('pubDate').first.innerText
                 : 'Không rõ thời gian';
 
-            // 🧠 Lấy nội dung mô tả hoặc content:encoded
+            // Lấy nội dung mô tả hoặc content:encoded
             String description = '';
             if (item.findElements('content:encoded').isNotEmpty) {
               description = item.findElements('content:encoded').first.innerText;
@@ -70,7 +70,7 @@ class RssService {
               description = item.findElements('description').first.innerText;
             }
 
-            // 🧹 Làm sạch HTML & quảng cáo
+            // Làm sạch HTML & quảng cáo
             description = description
                 .replaceAll(RegExp(r'<(script|style)[^>]*>.*?</\1>', dotAll: true), '')
                 .replaceAll(RegExp(r'<img[^>]*>', caseSensitive: false), '')
@@ -99,7 +99,7 @@ class RssService {
           }
         }
       } catch (e) {
-        print("❌ Lỗi khi tải RSS từ $url: $e");
+        print("Lỗi khi tải RSS từ $url: $e");
       }
     }
 
@@ -119,7 +119,7 @@ class RssService {
     return 'Nguồn khác';
   }
 
-  // 🎯 Lấy tin tức theo danh mục
+  //Lấy tin tức theo danh mục
   static Future<List<ArticleModel>> fetchNewsByCategory(String category) async {
     List<ArticleModel> allArticles = [];
 
@@ -128,7 +128,7 @@ class RssService {
       return fetchLatestNews();
     }
 
-    // Lọc các RSS feeds theo danh mục
+    //Lọc các RSS feeds theo danh mục
     final filteredFeeds = rssFeeds.where((feed) => feed['category'] == category).toList();
 
     for (var feed in filteredFeeds) {
@@ -180,19 +180,19 @@ class RssService {
           }
         }
       } catch (e) {
-        print("❌ Lỗi khi tải RSS từ ${feed['url']}: $e");
+        print("Lỗi khi tải RSS từ ${feed['url']}: $e");
       }
     }
 
     return allArticles;
   }
 
-  // 🔍 Lấy tất cả danh mục có sẵn
+  // Lấy tất cả danh mục có sẵn
   static List<String> getCategories() {
     return ['Tất cả', 'Chính trị', 'Công nghệ', 'Kinh doanh', 'Thể thao', 'Sức khỏe', 'Đời sống'];
   }
 
-  // 🔎 Tìm kiếm tin tức theo tiêu đề
+  // Tìm kiếm tin tức theo tiêu đề
   static List<ArticleModel> searchArticles(List<ArticleModel> articles, String query) {
     if (query.isEmpty) return articles;
 
@@ -202,7 +202,7 @@ class RssService {
     }).toList();
   }
 
-  // 🎲 Lấy tin tức ngẫu nhiên hoặc mới nhất
+  // Lấy tin tức ngẫu nhiên hoặc mới nhất
   static Future<List<ArticleModel>> fetchRandomNews() async {
     List<ArticleModel> allArticles = [];
 
@@ -264,7 +264,7 @@ class RssService {
           }
         }
       } catch (e) {
-        print("❌ Lỗi khi tải RSS từ $url: $e");
+        print("Lỗi khi tải RSS từ $url: $e");
       }
     }
 
