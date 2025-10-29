@@ -43,3 +43,24 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase Configuration - DO NOT COMMIT!
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+.firebase/
+firebase.json
+.firebaserc
+
+# API Keys and Secrets
+*.env
+.env
+.env.local
+.env.*.local
+secrets.json
+api_keys.dart
+
+# Local configuration
+android/local.properties
+ios/Flutter/flutter_export_environment.sh
+

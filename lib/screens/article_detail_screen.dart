@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/article_model.dart';
+import '../services/firestore_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html_parser;
@@ -18,6 +19,9 @@ class ArticleDetailScreen extends StatefulWidget {
 class _ArticleDetailScreenState extends State<ArticleDetailScreen> with TickerProviderStateMixin {
   String? fullContent;
   bool isLoadingContent = false;
+  bool isBookmarked = false;
+  bool isCheckingBookmark = true;
+  final _firestoreService = FirestoreService();
   late AnimationController _fadeController;
   late AnimationController _scaleController;
   late Animation<double> _fadeAnimation;
@@ -59,6 +63,112 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> with TickerPr
     _scaleController.forward();
 
     _fetchFullContent();
+    _checkBookmarkStatus();
+  }
+
+  // Kiểm tra trạng thái bookmark
+  Future<void> _checkBookmarkStatus() async {
+    final bookmarked = await _firestoreService.isBookmarked(widget.article.link);
+    setState(() {
+      isBookmarked = bookmarked;
+      isCheckingBookmark = false;
+    });
+  }
+
+  // Toggle bookmark
+  Future<void> _toggleBookmark() async {
+    // Hiển thị loading state
+    setState(() {
+      isCheckingBookmark = true;
+    });
+
+    try {
+      final success = await _firestoreService.toggleBookmark(widget.article);
+
+      if (!mounted) return;
+
+      setState(() {
+        isCheckingBookmark = false;
+      });
+
+      if (success) {
+        // Cập nhật trạng thái bookmark
+        final newBookmarkStatus = await _firestoreService.isBookmarked(widget.article.link);
+
+        setState(() {
+          isBookmarked = newBookmarkStatus;
+        });
+
+        // Hiển thị thông báo thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  isBookmarked ? 'Đã lưu bài viết vào bookmark' : 'Đã xóa khỏi bookmark',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            backgroundColor: isBookmarked ? Colors.green : Colors.orange,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      } else {
+        // Hiển thị lỗi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Không thể lưu bookmark. Vui lòng thử lại.',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            action: SnackBarAction(
+              label: 'Thử lại',
+              textColor: Colors.white,
+              onPressed: _toggleBookmark,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error in _toggleBookmark: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        isCheckingBookmark = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -333,10 +443,12 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> with TickerPr
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border, color: Colors.black87),
-            onPressed: () {
-              // TODO: Thêm vào bookmark
-            },
+            icon: Icon(
+              isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+              color: isBookmarked ? const Color(0xFF5A7D3C) : Colors.black87,
+            ),
+            onPressed: isCheckingBookmark ? null : _toggleBookmark,
+            tooltip: isBookmarked ? 'Bỏ lưu' : 'Lưu bài viết',
           ),
           IconButton(
             icon: isLoadingContent

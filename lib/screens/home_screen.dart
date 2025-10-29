@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/article_model.dart';
 import '../widgets/article_card_horizontal.dart';
 import '../services/rss_service.dart';
+import '../services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,6 +12,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final _authService = AuthService();
   int selectedCategory = 0;
   bool isLoading = true;
   bool isLoadingMore = false;
@@ -73,16 +75,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        actions: const [
-          Icon(Icons.settings_outlined, color: Colors.black87),
-          SizedBox(width: 10),
-          Icon(Icons.notifications_outlined, color: Colors.black87),
-          SizedBox(width: 10),
+        actions: [
+          const Icon(Icons.settings_outlined, color: Colors.black87),
+          const SizedBox(width: 10),
+          const Icon(Icons.notifications_outlined, color: Colors.black87),
+          const SizedBox(width: 10),
           CircleAvatar(
             radius: 15,
-            backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=12'),
+            backgroundColor: const Color(0xFF5A7D3C),
+            child: Text(
+              (_authService.currentUser?.displayName ?? 'U')[0].toUpperCase(),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
         ],
       ),
       body: isLoading
