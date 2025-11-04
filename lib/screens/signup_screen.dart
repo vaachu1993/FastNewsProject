@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fastnews/services/auth_service.dart';
-import 'main_screen.dart';
+import 'topics_selection_screen.dart';
 import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -43,7 +43,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (!mounted) return;
 
       if (error == null) {
-        // Sign up thành công - chuyển đến main screen
+        // Sign up thành công - chuyển đến topics selection screen
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đăng ký thành công! Chào mừng bạn đến với FastNews'),
@@ -51,10 +51,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         );
 
-        // Xóa toàn bộ navigation stack và chuyển đến MainScreen
+        // Xóa toàn bộ navigation stack và chuyển đến TopicsSelectionScreen
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
+          MaterialPageRoute(builder: (context) => const TopicsSelectionScreen()),
           (route) => false, // Xóa tất cả routes trước đó
         );
       } else {

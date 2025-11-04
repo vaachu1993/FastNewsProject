@@ -1,6 +1,9 @@
 import 'package:fastnews/screens/signup_screen.dart';
+import 'package:fastnews/screens/topics_selection_screen.dart';
 import 'package:fastnews/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -44,12 +47,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
 
-        // Xóa toàn bộ navigation stack và chuyển đến MainScreen
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-          (route) => false,
-        );
+        // Kiểm tra xem user đã chọn topics chưa
+        await _checkAndNavigate();
       } else {
         // Hiển thị lỗi
         ScaffoldMessenger.of(context).showSnackBar(
@@ -64,6 +63,50 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() => _isGoogleLoading = false);
       }
+    }
+  }
+
+  // Check if user has selected topics and navigate accordingly
+  Future<void> _checkAndNavigate() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (!mounted) return;
+
+        // Kiểm tra xem user đã có selectedTopics chưa
+        if (userDoc.exists && userDoc.data()?['selectedTopics'] != null) {
+          final topics = userDoc.data()?['selectedTopics'] as List?;
+          if (topics != null && topics.isNotEmpty) {
+            // Đã chọn topics rồi -> đi thẳng đến MainScreen
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+              (route) => false,
+            );
+            return;
+          }
+        }
+
+        // Chưa chọn topics -> đi đến TopicsSelectionScreen
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const TopicsSelectionScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // Nếu có lỗi, vẫn cho đi đến TopicsSelectionScreen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const TopicsSelectionScreen()),
+        (route) => false,
+      );
     }
   }
 
@@ -90,12 +133,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
 
-        // Xóa toàn bộ navigation stack và chuyển đến MainScreen
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-          (route) => false, // Xóa tất cả routes trước đó
-        );
+        // Kiểm tra xem user đã chọn topics chưa
+        await _checkAndNavigate();
       } else {
         // Hiển thị lỗi
         ScaffoldMessenger.of(context).showSnackBar(

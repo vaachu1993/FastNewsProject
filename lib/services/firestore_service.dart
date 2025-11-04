@@ -113,25 +113,38 @@ class FirestoreService {
       return Stream.value([]);
     }
 
-    return _firestore
-        .collection('users')
-        .doc(currentUserId)
-        .collection('bookmarks')
-        .orderBy('bookmarkedAt', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        return ArticleModel(
-          title: data['title'] ?? '',
-          link: data['link'] ?? '',
-          description: data['description'] ?? '',
-          time: data['pubDate'] ?? '',
-          imageUrl: data['imageUrl'] ?? '',
-          source: data['source'] ?? '',
-        );
-      }).toList();
-    });
+    try {
+      return _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('bookmarks')
+          .snapshots()
+          .map((snapshot) {
+        // Sort by bookmarkedAt locally instead of using Firestore orderBy
+        final docs = snapshot.docs.toList();
+        docs.sort((a, b) {
+          final aTime = a.data()['bookmarkedAt'] as Timestamp?;
+          final bTime = b.data()['bookmarkedAt'] as Timestamp?;
+          if (aTime == null || bTime == null) return 0;
+          return bTime.compareTo(aTime); // Descending order
+        });
+
+        return docs.map((doc) {
+          final data = doc.data();
+          return ArticleModel(
+            title: data['title'] ?? '',
+            link: data['link'] ?? '',
+            description: data['description'] ?? '',
+            time: data['pubDate'] ?? '',
+            imageUrl: data['imageUrl'] ?? '',
+            source: data['source'] ?? '',
+          );
+        }).toList();
+      });
+    } catch (e) {
+      print('Error getting bookmarks stream: $e');
+      return Stream.value([]);
+    }
   }
 
   // Get all bookmarks (one-time fetch)
@@ -143,10 +156,20 @@ class FirestoreService {
           .collection('users')
           .doc(currentUserId)
           .collection('bookmarks')
-          .orderBy('bookmarkedAt', descending: true)
           .get();
 
-      return snapshot.docs.map((doc) {
+      // Sort by bookmarkedAt locally
+      final docs = snapshot.docs.toList();
+      docs.sort((a, b) {
+        final aData = a.data() as Map<String, dynamic>;
+        final bData = b.data() as Map<String, dynamic>;
+        final aTime = aData['bookmarkedAt'] as Timestamp?;
+        final bTime = bData['bookmarkedAt'] as Timestamp?;
+        if (aTime == null || bTime == null) return 0;
+        return bTime.compareTo(aTime); // Descending order
+      });
+
+      return docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return ArticleModel(
           title: data['title'] ?? '',

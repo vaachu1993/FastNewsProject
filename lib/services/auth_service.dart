@@ -5,7 +5,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -29,12 +31,16 @@ class AuthService {
       // Update display name
       await userCredential.user?.updateDisplayName(name);
 
-      // Save user data to Firestore
+      // Save user data to Firestore với structure đầy đủ
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
-        'name': name,
+        'displayName': name,
         'email': email,
+        'photoURL': '',
         'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'loginMethod': 'email',
         'bookmarks': [], // Danh sách bookmark rỗng ban đầu
+        // selectedTopics sẽ được thêm sau khi user chọn trong TopicsSelectionScreen
       });
 
       return null; // Success
@@ -86,35 +92,55 @@ class AuthService {
   // Sign in with Google
   Future<String?> signInWithGoogle() async {
     try {
+      print('🔵 Starting Google Sign In...');
+
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      print('🔵 Google Sign In dialog completed');
 
       // If user cancels the sign-in
       if (googleUser == null) {
+        print('🔴 User cancelled Google Sign In');
         return 'Đăng nhập bị hủy';
       }
 
+      print('🔵 Google User: ${googleUser.email}');
+
       // Obtain the auth details from the request
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      print('🔵 Got authentication tokens');
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
+      print('🔵 Created Firebase credential');
 
       // Sign in to Firebase with the Google credential
       UserCredential userCredential = await _auth.signInWithCredential(credential);
+      print('🟢 Firebase sign in successful: ${userCredential.user?.email}');
 
-      // Check if this is a new user
-      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-        // Save new user data to Firestore
+      // Check if this is a new user hoặc user chưa có trong Firestore
+      final userDoc = await _firestore.collection('users').doc(userCredential.user?.uid).get();
+
+      if (!userDoc.exists || userCredential.additionalUserInfo?.isNewUser == true) {
+        // Save new user data to Firestore với structure đầy đủ
         await _firestore.collection('users').doc(userCredential.user?.uid).set({
-          'name': userCredential.user?.displayName ?? 'Google User',
+          'displayName': userCredential.user?.displayName ?? 'Google User',
           'email': userCredential.user?.email ?? '',
-          'photoUrl': userCredential.user?.photoURL,
+          'photoURL': userCredential.user?.photoURL ?? '',
           'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
           'loginMethod': 'google',
+          'bookmarks': [],
+          // selectedTopics sẽ được thêm sau khi user chọn trong TopicsSelectionScreen
+        }, SetOptions(merge: true));
+      } else {
+        // User đã tồn tại, chỉ update timestamp
+        await _firestore.collection('users').doc(userCredential.user?.uid).update({
+          'updatedAt': FieldValue.serverTimestamp(),
+          'lastLoginAt': FieldValue.serverTimestamp(),
         });
       }
 
