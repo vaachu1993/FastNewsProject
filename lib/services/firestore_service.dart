@@ -196,5 +196,61 @@ class FirestoreService {
       return await addBookmark(article);
     }
   }
+
+  // Get user's favorite topics
+  Future<List<String>> getUserFavoriteTopics() async {
+    try {
+      if (currentUserId == null) {
+        print('Error: User not logged in');
+        return [];
+      }
+
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .get();
+
+      if (!doc.exists) {
+        print('User document does not exist');
+        return [];
+      }
+
+      final data = doc.data() as Map<String, dynamic>?;
+      if (data == null || !data.containsKey('favoriteTopics')) {
+        print('No favorite topics found');
+        return [];
+      }
+
+      final topics = data['favoriteTopics'] as List<dynamic>?;
+      return topics?.map((e) => e.toString()).toList() ?? [];
+    } catch (e) {
+      print('Error getting user favorite topics: $e');
+      return [];
+    }
+  }
+
+  // Save user's favorite topics
+  Future<bool> saveUserFavoriteTopics(List<String> topics) async {
+    try {
+      if (currentUserId == null) {
+        print('Error: User not logged in');
+        return false;
+      }
+
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .set({
+        'favoriteTopics': topics,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print('Favorite topics saved successfully');
+      return true;
+    } catch (e) {
+      print('Error saving favorite topics: $e');
+      return false;
+    }
+  }
 }
 

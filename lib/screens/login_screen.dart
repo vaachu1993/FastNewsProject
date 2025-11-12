@@ -1,5 +1,6 @@
 import 'package:fastnews/screens/signup_screen.dart';
 import 'package:fastnews/screens/topics_selection_screen.dart';
+import 'package:fastnews/screens/email_login_screen.dart';
 import 'package:fastnews/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -14,32 +15,92 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _authService = AuthService();
-  bool _obscurePassword = true;
-  bool _isLoading = false;
   bool _isGoogleLoading = false;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
 
   // Handle Google Sign In
   Future<void> _handleGoogleSignIn() async {
     setState(() => _isGoogleLoading = true);
 
     try {
-      String? error = await _authService.signInWithGoogle();
+      String? result = await _authService.signInWithGoogle();
 
       if (!mounted) return;
 
-      if (error == null) {
-        // Google login thành công
+      // ✅ Check if account exists - Block Google login
+      if (result != null && result.startsWith('ACCOUNT_EXISTS|')) {
+        final parts = result.split('|');
+        final email = parts[1];
+
+        setState(() => _isGoogleLoading = false);
+
+        // Show beautiful warning message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.info_outline,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Email đã được đăng ký',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Vui lòng đăng nhập bằng mật khẩu',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade700,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Đồng ý',
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
+          ),
+        );
+
+        return;
+      }
+
+      if (result == null) {
+        // Google login thành công (user mới)
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đăng nhập Google thành công!'),
@@ -47,13 +108,12 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
 
-        // Kiểm tra xem user đã chọn topics chưa
         await _checkAndNavigate();
       } else {
         // Hiển thị lỗi
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error),
+            content: Text(result),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -65,6 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
+
 
   // Check if user has selected topics and navigate accordingly
   Future<void> _checkAndNavigate() async {
@@ -110,133 +172,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // Handle login with Firebase
-  Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-
-    try {
-      String? error = await _authService.signInWithEmail(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      if (!mounted) return;
-
-      if (error == null) {
-        // Login thành công
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đăng nhập thành công!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // Kiểm tra xem user đã chọn topics chưa
-        await _checkAndNavigate();
-      } else {
-        // Hiển thị lỗi
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  // Show login dialog with email and password fields
-  void _showLoginDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Đăng nhập',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Vui lòng nhập email';
-                  }
-                  if (!value.contains('@')) {
-                    return 'Email không hợp lệ';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  hintText: 'Mật khẩu',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Vui lòng nhập mật khẩu';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _handleLogin();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF5A7D3C),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Đăng nhập'),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -328,7 +264,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _showLoginDialog,
+                    onPressed: () {
+                      // Navigate to Email Login Screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EmailLoginScreen(),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF5A7D3C),
                       foregroundColor: Colors.white,
@@ -337,22 +281,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(28),
                       ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Text(
-                            'Sign in with password',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                    child: const Text(
+                      'Sign in with password',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
 

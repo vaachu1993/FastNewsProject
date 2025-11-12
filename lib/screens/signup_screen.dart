@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fastnews/services/auth_service.dart';
+import 'package:fastnews/services/otp_service.dart';
 import 'topics_selection_screen.dart';
 import 'login_screen.dart';
+import 'otp_verification_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -16,6 +18,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
+  final _otpService = OtpService();
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -27,45 +30,59 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  // Handle sign up with Firebase
+  // Handle sign up - Send OTP first
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      String? error = await _authService.signUpWithEmail(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        name: _nameController.text.trim(),
-      );
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      final name = _nameController.text.trim();
+
+      // Gửi OTP đến email
+      final result = await _otpService.sendOtp(email);
 
       if (!mounted) return;
 
-      if (error == null) {
-        // Sign up thành công - chuyển đến topics selection screen
+      if (result['success']) {
+        // OTP gửi thành công - chuyển đến màn hình xác thực OTP
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đăng ký thành công! Chào mừng bạn đến với FastNews'),
+          SnackBar(
+            content: Text(result['message']),
             backgroundColor: Colors.green,
           ),
         );
 
-        // Xóa toàn bộ navigation stack và chuyển đến TopicsSelectionScreen
-        Navigator.pushAndRemoveUntil(
+        // Chuyển đến OTP verification screen
+        Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const TopicsSelectionScreen()),
-          (route) => false, // Xóa tất cả routes trước đó
+          MaterialPageRoute(
+            builder: (context) => OtpVerificationScreen(
+              email: email,
+              password: password,
+              name: name,
+            ),
+          ),
         );
       } else {
         // Hiển thị lỗi
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error),
+            content: Text(result['message']),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã xảy ra lỗi: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

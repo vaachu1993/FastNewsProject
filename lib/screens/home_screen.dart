@@ -3,6 +3,7 @@ import '../models/article_model.dart';
 import '../widgets/article_card_horizontal.dart';
 import '../services/rss_service.dart';
 import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,10 +14,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final _authService = AuthService();
+  final _firestoreService = FirestoreService();
   int selectedCategory = 0;
   bool isLoading = true;
   bool isLoadingMore = false;
   List<ArticleModel> latestNews = [];
+  List<ArticleModel> favoriteTopicsNews = [];
+  List<String> userFavoriteTopics = [];
+  Map<String, int> topicArticleCounts = {};
   final ScrollController _categoryScrollController = ScrollController();
 
   final List<String> categories = RssService.getCategories();
@@ -24,7 +29,43 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
+    _loadUserFavoriteTopics();
     _loadNews(isInitial: true);
+  }
+
+  Future<void> _loadUserFavoriteTopics() async {
+    try {
+      final topics = await _firestoreService.getUserFavoriteTopics();
+      setState(() {
+        userFavoriteTopics = topics;
+      });
+      if (topics.isNotEmpty) {
+        _loadFavoriteTopicsNews();
+      }
+    } catch (e) {
+      print('Error loading user favorite topics: $e');
+    }
+  }
+
+  Future<void> _loadFavoriteTopicsNews() async {
+    try {
+      List<ArticleModel> allNews = [];
+
+      // Load news from each favorite topic
+      for (String topic in userFavoriteTopics) {
+        final news = await RssService.fetchNewsByCategory(topic);
+        allNews.addAll(news.take(3)); // Take 3 articles from each topic
+      }
+
+      // Shuffle to mix different topics
+      allNews.shuffle();
+
+      setState(() {
+        favoriteTopicsNews = allNews.take(10).toList();
+      });
+    } catch (e) {
+      print('Error loading favorite topics news: $e');
+    }
   }
 
   @override
@@ -39,6 +80,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         selectedCategory = 0;
         isLoading = true;
       });
+      // Reload favorite topics when refreshing
+      await _loadUserFavoriteTopics();
     } else if (isInitial || latestNews.isEmpty) {
       setState(() => isLoading = true);
     } else {
@@ -65,6 +108,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.black87),
+            onPressed: () {
+              // Find the root Scaffold (MainScreen's Scaffold)
+              final scaffoldState = context.findRootAncestorStateOfType<ScaffoldState>();
+              scaffoldState?.openDrawer();
+            },
+          ),
+        ),
         title: Row(
           children: [
             Image.network(
@@ -83,8 +136,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ],
         ),
         actions: [
-          const Icon(Icons.settings_outlined, color: Colors.black87),
-          const SizedBox(width: 10),
           const Icon(Icons.notifications_outlined, color: Colors.black87),
           const SizedBox(width: 10),
           CircleAvatar(
@@ -193,6 +244,103 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
                         ),
                         const SizedBox(height: 14),
+
+                        // Favorite Topics Section (if user has selected topics)
+                        if (userFavoriteTopics.isNotEmpty) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.favorite,
+                                    color: Colors.red,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Danh mục yêu thích',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              IconButton(
+                                onPressed: _loadFavoriteTopicsNews,
+                                icon: const Icon(
+                                  Icons.refresh,
+                                  color: Colors.green,
+                                  size: 22,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Display selected topics as chips
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: userFavoriteTopics.map((topic) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.green.withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _getTopicIcon(topic),
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      topic,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Favorite topics news list
+                          if (favoriteTopicsNews.isNotEmpty)
+                            SizedBox(
+                              height: 320,
+                              child: ListView.builder(
+                                physics: const BouncingScrollPhysics(),
+                                scrollDirection: Axis.horizontal,
+                                itemCount: favoriteTopicsNews.length.clamp(0, 10),
+                                itemBuilder: (context, index) {
+                                  return Container(
+                                    width: 300,
+                                    margin: const EdgeInsets.only(right: 14),
+                                    child: ArticleCardHorizontal(
+                                      article: favoriteTopicsNews[index],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          const SizedBox(height: 24),
+                        ],
 
                         // Danh sách tin nổi bật (trượt ngang) với AnimatedSwitcher
                         AnimatedSwitcher(
@@ -328,5 +476,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ],
             ),
     );
+  }
+
+  String _getTopicIcon(String topic) {
+    switch (topic) {
+      case 'Chính trị':
+        return '🏛';
+      case 'Công nghệ':
+        return '💻';
+      case 'Kinh doanh':
+        return '💼';
+      case 'Thể thao':
+        return '⚽';
+      case 'Sức khỏe':
+        return '❤';
+      case 'Đời sống':
+        return '🎭';
+      default:
+        return '📰';
+    }
   }
 }

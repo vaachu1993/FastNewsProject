@@ -116,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           radius: 45,
                           backgroundColor: const Color(0xFF5A7D3C),
                           child: Text(
-                            (_currentUser?.displayName ?? 'U')[0].toUpperCase(),
+                            (_userData?['displayName'] ?? _currentUser?.displayName ?? 'U')[0].toUpperCase(),
                             style: const TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
@@ -125,12 +125,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Text(
-                          _currentUser?.displayName ?? 'Người dùng',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _userData?['displayName'] ?? _currentUser?.displayName ?? 'Người dùng',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                            ),
+                            if (_userData?['emailVerified'] == true) ...[
+                              const SizedBox(width: 6),
+                              Tooltip(
+                                message: 'Email đã xác thực',
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         Text(
                           _currentUser?.email ?? '',
@@ -150,7 +173,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 _buildInfoRow(
                                   Icons.person,
                                   'Tên',
-                                  _userData?['name'] ?? _currentUser?.displayName ?? 'Chưa cập nhật',
+                                  _userData?['displayName'] ?? _currentUser?.displayName ?? 'Chưa cập nhật',
                                 ),
                                 const Divider(),
                                 _buildInfoRow(
@@ -158,6 +181,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   'Email',
                                   _currentUser?.email ?? 'Chưa cập nhật',
                                 ),
+                                const Divider(),
+                                _buildVerificationRow(),
                                 const Divider(),
                                 _buildInfoRow(
                                   Icons.calendar_today,
@@ -211,6 +236,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fontSize: 14,
               ),
               overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationRow() {
+    final isVerified = _userData?['emailVerified'] == true;
+    final verificationMethod = _userData?['verificationMethod'] ?? 'unknown';
+
+    String methodText = '';
+    if (verificationMethod == 'otp') {
+      methodText = 'OTP Email';
+    } else if (verificationMethod == 'google') {
+      methodText = 'Google';
+    } else {
+      methodText = verificationMethod;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(
+            isVerified ? Icons.verified : Icons.warning_amber,
+            color: isVerified ? Colors.green : Colors.orange,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Trạng thái:',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isVerified ? Colors.green.shade50 : Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isVerified ? Colors.green.shade200 : Colors.orange.shade200,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isVerified ? Icons.check_circle : Icons.error_outline,
+                        size: 14,
+                        color: isVerified ? Colors.green : Colors.orange,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isVerified ? 'Đã xác thực' : 'Chưa xác thực',
+                        style: TextStyle(
+                          color: isVerified ? Colors.green.shade700 : Colors.orange.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isVerified) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '($methodText)',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

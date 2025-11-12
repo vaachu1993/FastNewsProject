@@ -49,6 +49,11 @@ google-services.json
 GoogleService-Info.plist
 firebase_options.dart
 .firebase/
+
+# Environment Variables - DO NOT COMMIT!
+.env
+*.env
+!.env.example
 firebase.json
 .firebaserc
 

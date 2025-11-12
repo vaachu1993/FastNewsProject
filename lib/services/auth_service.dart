@@ -39,6 +39,9 @@ class AuthService {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
         'loginMethod': 'email',
+        'emailVerified': true, // ✅ Đã xác thực qua OTP
+        'verifiedAt': FieldValue.serverTimestamp(), // Thời điểm xác thực
+        'verificationMethod': 'otp', // Phương thức xác thực
         'bookmarks': [], // Danh sách bookmark rỗng ban đầu
         // selectedTopics sẽ được thêm sau khi user chọn trong TopicsSelectionScreen
       });
@@ -104,7 +107,49 @@ class AuthService {
         return 'Đăng nhập bị hủy';
       }
 
-      print('🔵 Google User: ${googleUser.email}');
+      final email = googleUser.email;
+      print('🔵 Google User: $email');
+
+      // ✅ CHECK EMAIL TRƯỚC KHI SIGN IN (Quan trọng!)
+      print('🔵 Checking if email exists in Firestore...');
+
+      try {
+        QuerySnapshot existingUsers = await _firestore
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .limit(1)
+            .get();
+
+        if (existingUsers.docs.isNotEmpty) {
+          final existingUserDoc = existingUsers.docs.first;
+          final existingData = existingUserDoc.data() as Map<String, dynamic>;
+          final existingUid = existingUserDoc.id;
+          final existingLoginMethod = existingData['loginMethod'] ?? '';
+
+          print('🟡 Found existing user with email: $email');
+          print('🟡 Display Name: ${existingData['displayName']}');
+          print('🟡 Login Method: $existingLoginMethod');
+
+          // ✅ CHỈ block nếu đã đăng ký bằng EMAIL/PASSWORD
+          // Nếu đã đăng ký bằng Google trước đó → cho phép login lại
+          if (existingLoginMethod == 'email') {
+            // Email đã đăng ký bằng password - BLOCK Google sign in
+            await _googleSignIn.signOut();
+            print('🔴 Blocked Google sign in - email registered with password');
+            return 'ACCOUNT_EXISTS|$email|${existingData['displayName']}|$existingUid';
+          } else if (existingLoginMethod == 'google') {
+            // Email đã đăng ký bằng Google trước đó - CHO PHÉP login lại
+            print('🟢 Email already registered with Google - allowing sign in');
+            // Không return, tiếp tục flow bình thường
+          }
+        }
+      } catch (firestoreError) {
+        print('⚠️ Firestore check error (continuing anyway): $firestoreError');
+        // Nếu Firestore lỗi, vẫn cho phép đăng nhập Google
+      }
+
+      // ✅ Email chưa tồn tại - Tiếp tục sign in
+      print('🟢 Email not found - proceeding with Google sign in');
 
       // Obtain the auth details from the request
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
@@ -121,34 +166,43 @@ class AuthService {
       UserCredential userCredential = await _auth.signInWithCredential(credential);
       print('🟢 Firebase sign in successful: ${userCredential.user?.email}');
 
-      // Check if this is a new user hoặc user chưa có trong Firestore
-      final userDoc = await _firestore.collection('users').doc(userCredential.user?.uid).get();
+      // User mới hoàn toàn - tạo document mới
+      print('🟢 New Google user - creating document');
 
-      if (!userDoc.exists || userCredential.additionalUserInfo?.isNewUser == true) {
-        // Save new user data to Firestore với structure đầy đủ
+      try {
         await _firestore.collection('users').doc(userCredential.user?.uid).set({
           'displayName': userCredential.user?.displayName ?? 'Google User',
-          'email': userCredential.user?.email ?? '',
+          'email': email,
           'photoURL': userCredential.user?.photoURL ?? '',
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
           'loginMethod': 'google',
+          'emailVerified': true,
+          'verifiedAt': FieldValue.serverTimestamp(),
+          'verificationMethod': 'google',
           'bookmarks': [],
-          // selectedTopics sẽ được thêm sau khi user chọn trong TopicsSelectionScreen
         }, SetOptions(merge: true));
-      } else {
-        // User đã tồn tại, chỉ update timestamp
+
+        // Update last login
         await _firestore.collection('users').doc(userCredential.user?.uid).update({
           'updatedAt': FieldValue.serverTimestamp(),
           'lastLoginAt': FieldValue.serverTimestamp(),
         });
+
+        print('🟢 User document created successfully');
+      } catch (firestoreError) {
+        print('⚠️ Firestore write error: $firestoreError');
+        // User đã login Firebase Auth thành công
+        // Chỉ việc tạo document bị lỗi (có thể do Firestore rules)
+        // Vẫn return null để cho user vào app
       }
 
       return null; // Success
     } on FirebaseAuthException catch (e) {
+      print('🔴 FirebaseAuthException: ${e.code} - ${e.message}');
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          return 'Tài khoản đã tồn tại với phương thức đăng nhập khác.';
+          return 'Email này đã được đăng ký. Vui lòng đăng nhập bằng email/password hoặc liên hệ hỗ trợ.';
         case 'invalid-credential':
           return 'Thông tin xác thực không hợp lệ.';
         case 'operation-not-allowed':
@@ -159,7 +213,7 @@ class AuthService {
           return 'Đã xảy ra lỗi: ${e.message}';
       }
     } catch (e) {
-      print('Error in Google Sign In: $e');
+      print('🔴 Error in Google Sign In: $e');
       return 'Đã xảy ra lỗi: $e';
     }
   }
@@ -200,6 +254,35 @@ class AuthService {
     }
   }
 
+  // Check if user's email is verified
+  Future<bool> isEmailVerified(String uid) async {
+    try {
+      final userData = await getUserData(uid);
+      return userData?['emailVerified'] ?? false;
+    } catch (e) {
+      print('Error checking email verification: $e');
+      return false;
+    }
+  }
+
+  // Get verification info
+  Future<Map<String, dynamic>?> getVerificationInfo(String uid) async {
+    try {
+      final userData = await getUserData(uid);
+      if (userData != null && userData['emailVerified'] == true) {
+        return {
+          'isVerified': true,
+          'verifiedAt': userData['verifiedAt'],
+          'verificationMethod': userData['verificationMethod'] ?? 'unknown',
+        };
+      }
+      return {'isVerified': false};
+    } catch (e) {
+      print('Error getting verification info: $e');
+      return null;
+    }
+  }
+
   // Update user profile
   Future<void> updateUserProfile({
     String? name,
@@ -209,7 +292,7 @@ class AuthService {
     if (user != null) {
       if (name != null) {
         await user.updateDisplayName(name);
-        await _firestore.collection('users').doc(user.uid).update({'name': name});
+        await _firestore.collection('users').doc(user.uid).update({'displayName': name});
       }
       if (photoUrl != null) {
         await user.updatePhotoURL(photoUrl);
