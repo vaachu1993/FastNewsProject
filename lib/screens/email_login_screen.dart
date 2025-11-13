@@ -21,6 +21,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -50,14 +51,15 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
           ),
         );
 
-        // Check if user has selected topics
+        // Check if user has selected topics and navigate
         await _checkAndNavigate();
       } else {
-        // Hiển thị lỗi
+        // Hiển thị lỗi - sử dụng AuthErrorHandler nếu cần
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error),
-            backgroundColor: Colors.red,
+            backgroundColor: error.contains('❌') ? Colors.orange : Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -92,7 +94,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
           } else {
             // User chưa chọn topics → TopicsSelectionScreen
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const TopicsSelectionScreen()),
+              MaterialPageRoute(
+                builder: (context) => const TopicsSelectionScreen(),
+              ),
               (route) => false,
             );
           }
@@ -123,10 +127,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         ),
         title: const Text(
           'Đăng nhập',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -175,10 +176,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 const Text(
                   'Nhập email và mật khẩu của bạn',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF808080),
-                  ),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF808080)),
                 ),
 
                 const SizedBox(height: 40),
@@ -286,7 +284,9 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Text(
@@ -329,4 +329,3 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     );
   }
 }
-

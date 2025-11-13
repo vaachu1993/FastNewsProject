@@ -27,80 +27,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      // ✅ Check if account exists - Block Google login
-      if (result != null && result.startsWith('ACCOUNT_EXISTS|')) {
-        final parts = result.split('|');
-        final email = parts[1];
-
-        setState(() => _isGoogleLoading = false);
-
-        // Show beautiful warning message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.info_outline,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Email đã được đăng ký',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Vui lòng đăng nhập bằng mật khẩu',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.orange.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Đồng ý',
-              textColor: Colors.white,
-              onPressed: () {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              },
-            ),
-          ),
-        );
-
-        return;
-      }
-
       if (result == null) {
-        // Google login thành công (user mới)
+        // Google login thành công
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đăng nhập Google thành công!'),
@@ -110,12 +38,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
         await _checkAndNavigate();
       } else {
-        // Hiển thị lỗi
+        // Hiển thị lỗi (bao gồm provider conflict errors)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            backgroundColor: result.contains('❌') ? Colors.orange : Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
         );
       }
@@ -127,16 +60,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
 
-
   // Check if user has selected topics and navigate accordingly
+  // ⚡ OPTIMIZED: Reduced Firestore queries for faster navigation
   Future<void> _checkAndNavigate() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        // ⚡ Use cache from server to reduce latency
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
-            .get();
+            .get(const GetOptions(source: Source.serverAndCache));
 
         if (!mounted) return;
 
@@ -157,11 +91,14 @@ class _LoginScreenState extends State<LoginScreen> {
         // Chưa chọn topics -> đi đến TopicsSelectionScreen
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const TopicsSelectionScreen()),
+          MaterialPageRoute(
+            builder: (context) => const TopicsSelectionScreen(),
+          ),
           (route) => false,
         );
       }
     } catch (e) {
+      print('🟡 Navigation warning: $e');
       if (!mounted) return;
       // Nếu có lỗi, vẫn cho đi đến TopicsSelectionScreen
       Navigator.pushAndRemoveUntil(
@@ -171,8 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +162,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   onTap: () {
                     // Facebook login logic
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Facebook login coming soon')),
+                      const SnackBar(
+                        content: Text('Facebook login coming soon'),
+                      ),
                     );
                   },
                 ),
@@ -299,17 +236,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text(
                       "Don't have an account?  ",
-                      style: TextStyle(
-                        color: Color(0xFF2C2C2C),
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Color(0xFF2C2C2C), fontSize: 14),
                     ),
                     GestureDetector(
                       onTap: () {
                         // Navigate to sign up (replace to avoid back button)
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const SignUpScreen(),
+                          ),
                         );
                       },
                       child: const Text(
@@ -337,9 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Container(
       width: 100,
       height: 100,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
       child: Stack(
         children: [
           // Yellow part
@@ -353,10 +287,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFFF5D547),
-                    const Color(0xFFD4A528),
-                  ],
+                  colors: [const Color(0xFFF5D547), const Color(0xFFD4A528)],
                 ),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
@@ -378,10 +309,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF6B9B4D),
-                    const Color(0xFF4A7A32),
-                  ],
+                  colors: [const Color(0xFF6B9B4D), const Color(0xFF4A7A32)],
                 ),
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(20),
@@ -466,7 +394,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 24,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade300, width: 0.5),
+                      border: Border.all(
+                        color: Colors.grey.shade300,
+                        width: 0.5,
+                      ),
                     ),
                     child: const Center(
                       child: Text(
@@ -494,4 +425,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

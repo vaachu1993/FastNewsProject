@@ -115,14 +115,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         CircleAvatar(
                           radius: 45,
                           backgroundColor: const Color(0xFF5A7D3C),
-                          child: Text(
-                            (_userData?['displayName'] ?? _currentUser?.displayName ?? 'U')[0].toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                          backgroundImage: (_userData?['photoURL'] != null && _userData!['photoURL'].toString().isNotEmpty) ||
+                                  (_currentUser?.photoURL != null && _currentUser!.photoURL!.isNotEmpty)
+                              ? NetworkImage(_userData?['photoURL'] ?? _currentUser?.photoURL ?? '')
+                              : null,
+                          child: (_userData?['photoURL'] == null || _userData!['photoURL'].toString().isEmpty) &&
+                                  (_currentUser?.photoURL == null || _currentUser!.photoURL!.isEmpty)
+                              ? Text(
+                                  (_userData?['displayName'] ?? _currentUser?.displayName ?? _userData?['email'] ?? _currentUser?.email ?? 'U')[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : null,
                         ),
                         const SizedBox(height: 10),
                         Row(
@@ -156,7 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                         Text(
-                          _currentUser?.email ?? '',
+                          _userData?['email'] ?? _currentUser?.email ?? 'Không có email',
                           style: const TextStyle(color: Colors.grey),
                         ),
                         const SizedBox(height: 16),
@@ -179,7 +186,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 _buildInfoRow(
                                   Icons.email,
                                   'Email',
-                                  _currentUser?.email ?? 'Chưa cập nhật',
+                                  _userData?['email'] ?? _currentUser?.email ?? 'Chưa cập nhật',
                                 ),
                                 const Divider(),
                                 _buildVerificationRow(),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fastnews/services/auth_service.dart';
 import 'package:fastnews/services/otp_service.dart';
-import 'topics_selection_screen.dart';
 import 'login_screen.dart';
 import 'otp_verification_screen.dart';
 
@@ -30,7 +29,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  // Handle sign up - Send OTP first
+  // Handle sign up - Check email existence first, then send OTP
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -41,7 +40,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final password = _passwordController.text.trim();
       final name = _nameController.text.trim();
 
-      // Gửi OTP đến email
+      // ✅ BƯỚC 1: Kiểm tra email đã tồn tại chưa
+      print('🔵 Checking if email already exists: $email');
+      final checkResult = await _authService.checkEmailExists(email);
+
+      if (!mounted) return;
+
+      // Nếu email đã tồn tại với bất kỳ provider nào
+      if (checkResult['exists'] == true) {
+        final provider = checkResult['provider'] as String?;
+        String errorMessage;
+
+        if (provider == 'password') {
+          errorMessage = 'Email đã được đăng ký. Vui lòng đăng nhập.';
+        } else if (provider == 'google.com') {
+          errorMessage = 'Email đã được đăng ký bằng Google. Vui lòng đăng nhập bằng Google.';
+        } else {
+          errorMessage = 'Email đã được đăng ký. Vui lòng đăng nhập.';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // ✅ BƯỚC 2: Email chưa tồn tại → Gửi OTP
+      print('🟢 Email is available, sending OTP...');
       final result = await _otpService.sendOtp(email);
 
       if (!mounted) return;
