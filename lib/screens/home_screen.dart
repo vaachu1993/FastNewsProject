@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/article_model.dart';
 import '../widgets/article_card_horizontal.dart';
 import '../services/rss_service.dart';
@@ -24,13 +25,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Map<String, int> topicArticleCounts = {};
   final ScrollController _categoryScrollController = ScrollController();
 
+  // Add user data
+  User? _currentUser;
+  Map<String, dynamic>? _userData;
+
   final List<String> categories = RssService.getCategories();
 
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     _loadUserFavoriteTopics();
     _loadNews(isInitial: true);
+
+    // Listen to auth state changes
+    _authService.authStateChanges.listen((user) {
+      if (mounted) {
+        _loadUserData();
+      }
+    });
+  }
+
+  Future<void> _loadUserData() async {
+    _currentUser = _authService.currentUser;
+    if (_currentUser != null) {
+      _userData = await _authService.getUserData(_currentUser!.uid);
+      setState(() {});
+    }
   }
 
   Future<void> _loadUserFavoriteTopics() async {
@@ -80,7 +101,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         selectedCategory = 0;
         isLoading = true;
       });
-      // Reload favorite topics when refreshing
+      // Reload user data and favorite topics when refreshing
+      await _loadUserData();
       await _loadUserFavoriteTopics();
     } else if (isInitial || latestNews.isEmpty) {
       setState(() => isLoading = true);
@@ -141,14 +163,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           CircleAvatar(
             radius: 15,
             backgroundColor: const Color(0xFF5A7D3C),
-            child: Text(
-              (_authService.currentUser?.displayName ?? 'U')[0].toUpperCase(),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            backgroundImage: (_userData?['photoURL'] != null && _userData!['photoURL'].toString().isNotEmpty) ||
+                    (_currentUser?.photoURL != null && _currentUser!.photoURL!.isNotEmpty)
+                ? NetworkImage(_userData?['photoURL'] ?? _currentUser?.photoURL ?? '')
+                : null,
+            child: (_userData?['photoURL'] == null || _userData!['photoURL'].toString().isEmpty) &&
+                    (_currentUser?.photoURL == null || _currentUser!.photoURL!.isEmpty)
+                ? Text(
+                    (_userData?['displayName'] ?? _currentUser?.displayName ?? _userData?['email'] ?? _currentUser?.email ?? 'U')[0].toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 12),
         ],
@@ -341,6 +370,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             ),
                           const SizedBox(height: 24),
                         ],
+
 
                         // Danh sách tin nổi bật (trượt ngang) với AnimatedSwitcher
                         AnimatedSwitcher(

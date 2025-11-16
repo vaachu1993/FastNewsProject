@@ -4,14 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-/// ============================================
-/// AUTH SERVICE - Single-Provider Authentication
-/// Enforces ONE provider per email (no multi-provider)
-/// Rules:
-/// - If email exists with password → Only password login allowed
-/// - If email exists with Google → Only Google login allowed
-/// - No account linking - one provider per email
-/// ============================================
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -23,14 +16,6 @@ class AuthService {
 
   // Stream to listen to auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  // ============================================
-  // 0. CHECK EMAIL EXISTS WITH PROVIDER
-  // ============================================
-  /// Kiểm tra xem email đã tồn tại với provider nào
-  /// Returns: {'exists': bool, 'provider': String?}
-  /// - exists: true nếu email đã tồn tại
-  /// - provider: 'password' | 'google.com' | null
   Future<Map<String, dynamic>> checkEmailExists(String email) async {
     try {
       print('🔵 [CheckEmail] Starting check for: $email');

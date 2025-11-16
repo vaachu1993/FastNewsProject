@@ -252,5 +252,153 @@ class FirestoreService {
       return false;
     }
   }
+
+  // ==================== READING HISTORY ====================
+
+  // Add article to reading history
+  Future<bool> addToReadingHistory(ArticleModel article) async {
+    try {
+      if (currentUserId == null) {
+        print('Error: User not logged in');
+        return false;
+      }
+
+      final docId = _getDocumentId(article.link);
+      print('Adding to reading history with ID: $docId for user: $currentUserId');
+
+      // Lưu article vào subcollection reading_history
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('reading_history')
+          .doc(docId)
+          .set({
+        'title': article.title,
+        'link': article.link,
+        'description': article.description ?? '',
+        'pubDate': article.time,
+        'imageUrl': article.imageUrl,
+        'source': article.source,
+        'readAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)); // merge: true để cập nhật readAt nếu đã tồn tại
+
+      print('Added to reading history successfully');
+      return true;
+    } catch (e) {
+      print('Error adding to reading history: $e');
+      return false;
+    }
+  }
+
+  // Get reading history as stream
+  Stream<List<ArticleModel>> getReadingHistoryStream() {
+    if (currentUserId == null) {
+      return Stream.value([]);
+    }
+
+    try {
+      return _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('reading_history')
+          .snapshots()
+          .map((snapshot) {
+        // Sort by readAt locally
+        final docs = snapshot.docs.toList();
+        docs.sort((a, b) {
+          final aTime = a.data()['readAt'] as Timestamp?;
+          final bTime = b.data()['readAt'] as Timestamp?;
+          if (aTime == null || bTime == null) return 0;
+          return bTime.compareTo(aTime); // Descending order (newest first)
+        });
+
+        return docs.map((doc) {
+          final data = doc.data();
+          return ArticleModel(
+            title: data['title'] ?? '',
+            link: data['link'] ?? '',
+            description: data['description'] ?? '',
+            time: data['pubDate'] ?? '',
+            imageUrl: data['imageUrl'] ?? '',
+            source: data['source'] ?? '',
+          );
+        }).toList();
+      });
+    } catch (e) {
+      print('Error getting reading history stream: $e');
+      return Stream.value([]);
+    }
+  }
+
+  // Get reading history (one-time fetch)
+  Future<List<ArticleModel>> getReadingHistory({int limit = 20}) async {
+    try {
+      if (currentUserId == null) return [];
+
+      QuerySnapshot snapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('reading_history')
+          .get();
+
+      // Sort by readAt locally
+      final docs = snapshot.docs.toList();
+      docs.sort((a, b) {
+        final aData = a.data() as Map<String, dynamic>;
+        final bData = b.data() as Map<String, dynamic>;
+        final aTime = aData['readAt'] as Timestamp?;
+        final bTime = bData['readAt'] as Timestamp?;
+        if (aTime == null || bTime == null) return 0;
+        return bTime.compareTo(aTime); // Descending order (newest first)
+      });
+
+      // Apply limit
+      final limitedDocs = docs.take(limit);
+
+      return limitedDocs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return ArticleModel(
+          title: data['title'] ?? '',
+          link: data['link'] ?? '',
+          description: data['description'] ?? '',
+          time: data['pubDate'] ?? '',
+          imageUrl: data['imageUrl'] ?? '',
+          source: data['source'] ?? '',
+        );
+      }).toList();
+    } catch (e) {
+      print('Error getting reading history: $e');
+      return [];
+    }
+  }
+
+  // Clear reading history
+  Future<bool> clearReadingHistory() async {
+    try {
+      if (currentUserId == null) {
+        print('Error: User not logged in');
+        return false;
+      }
+
+      QuerySnapshot snapshot = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('reading_history')
+          .get();
+
+      // Delete all documents in batch
+      WriteBatch batch = _firestore.batch();
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      print('Reading history cleared successfully');
+      return true;
+    } catch (e) {
+      print('Error clearing reading history: $e');
+      return false;
+    }
+  }
 }
 

@@ -64,6 +64,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> with TickerPr
 
     _fetchFullContent();
     _checkBookmarkStatus();
+    _addToReadingHistory(); // Lưu vào lịch sử đọc
   }
 
   // Kiểm tra trạng thái bookmark
@@ -73,6 +74,11 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> with TickerPr
       isBookmarked = bookmarked;
       isCheckingBookmark = false;
     });
+  }
+
+  // Thêm vào lịch sử đọc
+  Future<void> _addToReadingHistory() async {
+    await _firestoreService.addToReadingHistory(widget.article);
   }
 
   // Toggle bookmark
