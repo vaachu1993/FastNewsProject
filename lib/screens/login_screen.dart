@@ -142,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Welcome Text
                 const Text(
-                  "Welcome! Let's dive into your account!",
+                  "Chào mừng! Hãy đăng nhập vào tài khoản của bạn!",
                   style: TextStyle(
                     fontSize: 15,
                     color: Color(0xFF808080),
@@ -158,12 +158,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   context,
                   icon: Icons.facebook,
                   iconColor: const Color(0xFF1877F2),
-                  text: 'Continue with Facebook',
+                  text: 'Tiếp tục với Facebook',
                   onTap: () {
                     // Facebook login logic
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Facebook login coming soon'),
+                        content: Text('Đăng nhập Facebook sắp ra mắt'),
                       ),
                     );
                   },
@@ -183,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'or',
+                        'hoặc',
                         style: TextStyle(
                           color: Color(0xFF808080),
                           fontSize: 14,
@@ -219,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     child: const Text(
-                      'Sign in with password',
+                      'Đăng nhập bằng mật khẩu',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -235,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      "Don't have an account?  ",
+                      "Chưa có tài khoản?  ",
                       style: TextStyle(color: Color(0xFF2C2C2C), fontSize: 14),
                     ),
                     GestureDetector(
@@ -249,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                       child: const Text(
-                        'Sign up',
+                        'Đăng ký',
                         style: TextStyle(
                           color: Color(0xFF5A7D3C),
                           fontSize: 14,
@@ -412,7 +412,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(width: 12),
                   const Text(
-                    'Continue with Google',
+                    'Tiếp tục với Google',
                     style: TextStyle(
                       color: Color(0xFF2C2C2C),
                       fontSize: 16,

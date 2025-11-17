@@ -17,6 +17,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   List<ArticleModel> articles = [];
   List<ArticleModel> filteredArticles = [];
   String searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   final List<String> tags = RssService.getCategories();
 
@@ -24,6 +25,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   void initState() {
     super.initState();
     _loadNews(isInitial: true);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadNews({bool isInitial = false}) async {
@@ -80,6 +87,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(
+                    controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'Tìm kiếm tin tức...',
                       prefixIcon: const Icon(Icons.search),
@@ -87,6 +95,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           ? IconButton(
                               icon: const Icon(Icons.clear),
                               onPressed: () {
+                                _searchController.clear();
                                 _searchArticles('');
                               },
                             )

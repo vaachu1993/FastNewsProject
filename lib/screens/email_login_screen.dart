@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'main_screen.dart';
 import 'topics_selection_screen.dart';
+import 'forgot_password_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -301,14 +302,14 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
                 const SizedBox(height: 16),
 
-                // Forgot Password (Optional)
+                // Forgot Password
                 Center(
                   child: TextButton(
                     onPressed: () {
-                      // TODO: Implement forgot password
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Tính năng quên mật khẩu sẽ sớm có'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ForgotPasswordScreen(),
                         ),
                       );
                     },
@@ -316,7 +317,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                       'Quên mật khẩu?',
                       style: TextStyle(
                         color: Color(0xFF5A7D3C),
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

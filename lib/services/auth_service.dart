@@ -439,7 +439,7 @@ class AuthService {
         await _googleSignIn.signOut();
         print('🔴 Google sign out completed');
         print('🔴 Returning error message to user');
-        return '❌ Email này đã được đăng ký bằng Email/Mật khẩu. Vui lòng đăng nhập bằng email/mật khẩu.';
+        return '❌ Email này đã được đăng ký bằng Email/Mật khẩu.';
       }
 
       if (hasGoogleProvider) {
@@ -731,9 +731,9 @@ class AuthService {
   }
 
   // ============================================
-  // RESET PASSWORD
+  // SEND PASSWORD RESET EMAIL (Legacy)
   // ============================================
-  Future<String?> resetPassword(String email) async {
+  Future<String?> sendPasswordResetEmailLegacy(String email) async {
     try {
       print('🔵 Sending password reset email to: $email');
       await _auth.sendPasswordResetEmail(email: email);
@@ -822,6 +822,52 @@ class AuthService {
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
+    }
+  }
+
+  // ============================================
+  // SEND PASSWORD RESET EMAIL (Firebase Native)
+  // ============================================
+  /// Gửi email đặt lại mật khẩu sử dụng Firebase Authentication
+  /// Không cần OTP, không cần Firestore, an toàn và đơn giản
+  Future<Map<String, dynamic>> sendPasswordResetEmail(String email) async {
+    try {
+      print('🔵 Sending Firebase password reset email to: $email');
+
+      await _auth.sendPasswordResetEmail(email: email.trim());
+
+      print('🟢 Password reset email sent successfully');
+
+      return {
+        'success': true,
+        'message': 'Email đặt lại mật khẩu đã được gửi',
+      };
+    } on FirebaseAuthException catch (e) {
+      print('🔴 Firebase Auth error: ${e.code} - ${e.message}');
+
+      switch (e.code) {
+        case 'user-not-found':
+          return {
+            'success': false,
+            'message': 'Không tìm thấy tài khoản với email này',
+          };
+        case 'invalid-email':
+          return {
+            'success': false,
+            'message': 'Email không hợp lệ',
+          };
+        default:
+          return {
+            'success': false,
+            'message': 'Lỗi: ${e.message}',
+          };
+      }
+    } catch (e) {
+      print('🔴 Error sending password reset email: $e');
+      return {
+        'success': false,
+        'message': 'Đã xảy ra lỗi: ${e.toString()}',
+      };
     }
   }
 }
