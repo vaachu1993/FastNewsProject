@@ -46,16 +46,48 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
             title: const Row(
               children: [
-                Icon(Icons.email, color: Color(0xFF5A7D3C), size: 28),
-                SizedBox(width: 12),
-                Text('Email đã được gửi!'),
+                Icon(Icons.email, color: Color(0xFF5A7D3C), size: 24),
+                SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'Email đã được gửi!',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
               ],
             ),
-            content: Text(
-              'Chúng tôi đã gửi link đặt lại mật khẩu đến:\n\n'
-              '$email\n\n'
-              'Vui lòng kiểm tra hộp thư của bạn và nhấn vào link để đặt lại mật khẩu.',
-              style: const TextStyle(fontSize: 15),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Link đặt lại mật khẩu đã được gửi đến:',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F8F8),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF5A7D3C),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Vui lòng kiểm tra hộp thư và nhấn vào link để đặt lại mật khẩu.',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
