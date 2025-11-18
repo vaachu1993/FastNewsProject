@@ -648,10 +648,10 @@ class AuthService {
         'verificationMethod': 'google',
         'bookmarks': [],
       });
-      print('🟢 Google user document created with single provider');
+      print('Google user document created with single provider');
 
     } else {
-      // ✅ Existing user - CHECK before updating
+      //  Existing user - CHECK before updating
       print('🟢 Updating existing user - checking existing provider');
 
       final userData = userDoc.data() as Map<String, dynamic>;
@@ -659,13 +659,13 @@ class AuthService {
 
       print('🔵 Current providers in Firestore: $currentProviders');
 
-      // 🚨 CRITICAL SAFETY CHECK: DO NOT overwrite password provider
+      // CRITICAL SAFETY CHECK: DO NOT overwrite password provider
       if (currentProviders.contains('password')) {
         print('🔴🔴🔴 SAFETY CHECK FAILED: User has password provider 🔴🔴🔴');
         print('🔴 This should have been blocked earlier!');
         print('🔴 Firebase may have merged accounts - ROLLING BACK...');
 
-        // 🔧 ROLLBACK STRATEGY: Unlink Google provider if it was added
+        // ROLLBACK STRATEGY: Unlink Google provider if it was added
         try {
           final currentUser = _auth.currentUser;
           if (currentUser != null) {
@@ -719,20 +719,14 @@ class AuthService {
       }
     }
   }
-
-  // ============================================
   // SIGN OUT
-  // ============================================
   Future<void> signOut() async {
     print('🔵 Signing out...');
     await _googleSignIn.signOut();
     await _auth.signOut();
     print('🟢 Signed out successfully');
   }
-
-  // ============================================
   // SEND PASSWORD RESET EMAIL (Legacy)
-  // ============================================
   Future<String?> sendPasswordResetEmailLegacy(String email) async {
     try {
       print('🔵 Sending password reset email to: $email');
@@ -755,10 +749,7 @@ class AuthService {
       return 'Đã xảy ra lỗi không xác định: $e';
     }
   }
-
-  // ============================================
   // GET USER DATA
-  // ============================================
   Future<Map<String, dynamic>?> getUserData(String uid) async {
     try {
       DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
@@ -768,10 +759,7 @@ class AuthService {
       return null;
     }
   }
-
-  // ============================================
   // CHECK EMAIL VERIFICATION STATUS
-  // ============================================
   Future<bool> isEmailVerified(String uid) async {
     try {
       final userData = await getUserData(uid);
