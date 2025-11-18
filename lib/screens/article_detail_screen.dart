@@ -871,12 +871,6 @@ Chia sẻ từ FastNews 📱
             onPressed: _showShareOptions,
             tooltip: 'Chia sẻ bài viết',
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black87),
-            onPressed: () {
-              // TODO: Menu khác
-            },
-          ),
         ],
       ),
       body: RefreshIndicator(

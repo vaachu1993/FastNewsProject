@@ -156,7 +156,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                   // Welcome Text
                   const Text(
-                    "Create your account to get started!",
+                    "Tạo tài khoản để bắt đầu!",
                     style: TextStyle(
                       fontSize: 15,
                       color: Color(0xFF808080),
@@ -170,11 +170,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   // Name Input
                   _buildTextField(
                     controller: _nameController,
-                    hintText: 'Full Name',
+                    hintText: 'Họ và tên',
                     icon: Icons.person_outline,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your name';
+                        return 'Vui lòng nhập họ tên';
                       }
                       return null;
                     },
@@ -190,10 +190,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
+                        return 'Vui lòng nhập email';
                       }
                       if (!value.contains('@')) {
-                        return 'Please enter a valid email';
+                        return 'Email không hợp lệ';
                       }
                       return null;
                     },
@@ -204,7 +204,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   // Password Input
                   _buildTextField(
                     controller: _passwordController,
-                    hintText: 'Password',
+                    hintText: 'Mật khẩu',
                     icon: Icons.lock_outline,
                     obscureText: _obscurePassword,
                     suffixIcon: IconButton(
@@ -220,10 +220,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
+                        return 'Vui lòng nhập mật khẩu';
                       }
                       if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
+                        return 'Mật khẩu phải có ít nhất 6 ký tự';
                       }
                       return null;
                     },
@@ -255,7 +255,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                             )
                           : const Text(
-                              'Sign up',
+                              'Đăng ký',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -264,46 +264,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
-
-                  // Or divider
-                  const Row(
-                    children: [
-                      Expanded(child: Divider(color: Color(0xFFE0E0E0))),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'or',
-                          style: TextStyle(
-                            color: Color(0xFF808080),
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: Divider(color: Color(0xFFE0E0E0))),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Facebook Button
-                  _buildSocialButton(
-                    context,
-                    icon: Icons.facebook,
-                    iconColor: const Color(0xFF1877F2),
-                    text: 'Sign up with Facebook',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Facebook sign up coming soon')),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Google Button
-                  _buildGoogleButton(context),
-
                   const SizedBox(height: 24),
 
                   // Sign in text
@@ -311,7 +271,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(
-                        "Already have an account?  ",
+                        "Đã có tài khoản?  ",
                         style: TextStyle(
                           color: Color(0xFF2C2C2C),
                           fontSize: 14,
@@ -325,7 +285,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           );
                         },
                         child: const Text(
-                          'Sign in',
+                          'Đăng nhập',
                           style: TextStyle(
                             color: Color(0xFF5A7D3C),
                             fontSize: 14,
@@ -455,97 +415,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      ),
-    );
-  }
-
-  Widget _buildSocialButton(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String text,
-    required VoidCallback onTap,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          backgroundColor: Colors.white,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: iconColor, size: 24),
-            const SizedBox(width: 12),
-            Text(
-              text,
-              style: const TextStyle(
-                color: Color(0xFF2C2C2C),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGoogleButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Google sign up coming soon')),
-          );
-        },
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          backgroundColor: Colors.white,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.shade300, width: 0.5),
-              ),
-              child: const Center(
-                child: Text(
-                  'G',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF4285F4),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Sign up with Google',
-              style: TextStyle(
-                color: Color(0xFF2C2C2C),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

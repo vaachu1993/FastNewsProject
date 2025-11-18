@@ -27,6 +27,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     _loadNews(isInitial: true);
   }
 
+
   @override
   void dispose() {
     _searchController.dispose();

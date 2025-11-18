@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import '../models/article_model.dart';
+import '../utils/html_utils.dart';
+import '../services/notification_service.dart';
 
 class RssService {
   static final List<String> rssUrls = [
@@ -56,7 +59,8 @@ class RssService {
           final items = document.findAllElements('item');
 
           for (var item in items.take(8)) {
-            final title = item.findElements('title').first.innerText;
+            final rawTitle = item.findElements('title').first.innerText;
+            final title = HtmlUtils.decodeHtmlEntities(rawTitle);
             final link = item.findElements('link').first.innerText;
             final pubDate = item.findElements('pubDate').isNotEmpty
                 ? item.findElements('pubDate').first.innerText
@@ -78,12 +82,10 @@ class RssService {
                 .replaceAll('</a>', '')
                 .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
                 .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
-                .replaceAll('&nbsp;', ' ')
-                .replaceAll('&amp;', '&')
-                .replaceAll('&quot;', '"')
-                .replaceAll('&lt;', '<')
-                .replaceAll('&gt;', '>')
                 .trim();
+
+            // Decode HTML entities
+            description = HtmlUtils.decodeHtmlEntities(description);
 
             // 🖼 Tìm ảnh minh họa (nếu có)
             final imageUrl = _extractImageUrl(item.toXmlString());
@@ -103,13 +105,20 @@ class RssService {
       }
     }
 
+    // ✅ Check and notify about new articles
+    if (allArticles.isNotEmpty) {
+      final notificationService = NotificationService();
+      await notificationService.checkAndNotifyNewArticles(allArticles);
+    }
+
     return allArticles;
   }
 
   static String _extractImageUrl(String text) {
     final regex = RegExp(r'<img.*?src="(.*?)"', caseSensitive: false);
     final match = regex.firstMatch(text);
-    return match != null ? match.group(1)! : 'https://picsum.photos/400/250';
+    // Return empty string if no image found - will show placeholder widget instead
+    return match != null ? match.group(1)! : '';
   }
 
   static String _detectSource(String url) {
@@ -140,7 +149,9 @@ class RssService {
           final items = document.findAllElements('item');
 
           for (var item in items.take(5)) {
-            final title = item.findElements('title').first.innerText;
+            final rawTitle = item.findElements('title').first.innerText;
+            final title = HtmlUtils.decodeHtmlEntities(rawTitle);
+
             final link = item.findElements('link').first.innerText;
             final pubDate = item.findElements('pubDate').isNotEmpty
                 ? item.findElements('pubDate').first.innerText
@@ -160,12 +171,10 @@ class RssService {
                 .replaceAll('</a>', '')
                 .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
                 .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
-                .replaceAll('&nbsp;', ' ')
-                .replaceAll('&amp;', '&')
-                .replaceAll('&quot;', '"')
-                .replaceAll('&lt;', '<')
-                .replaceAll('&gt;', '>')
                 .trim();
+
+            // Decode HTML entities
+            description = HtmlUtils.decodeHtmlEntities(description);
 
             final imageUrl = _extractImageUrl(item.toXmlString());
 
@@ -224,7 +233,8 @@ class RssService {
           items.shuffle(Random());
 
           for (var item in items.take(8)) {
-            final title = item.findElements('title').first.innerText;
+            final rawTitle = item.findElements('title').first.innerText;
+            final title = HtmlUtils.decodeHtmlEntities(rawTitle);
             final link = item.findElements('link').first.innerText;
             final pubDate = item.findElements('pubDate').isNotEmpty
                 ? item.findElements('pubDate').first.innerText
@@ -244,12 +254,10 @@ class RssService {
                 .replaceAll('</a>', '')
                 .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
                 .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
-                .replaceAll('&nbsp;', ' ')
-                .replaceAll('&amp;', '&')
-                .replaceAll('&quot;', '"')
-                .replaceAll('&lt;', '<')
-                .replaceAll('&gt;', '>')
                 .trim();
+
+            // Decode HTML entities
+            description = HtmlUtils.decodeHtmlEntities(description);
 
             final imageUrl = _extractImageUrl(item.toXmlString());
 

@@ -5,7 +5,7 @@ import 'discover_screen.dart';
 import 'bookmark_screen.dart';
 import 'profile_screen.dart';
 import 'reading_history_screen.dart';
-import 'login_screen.dart';
+import 'settings_screen.dart';
 import '../services/auth_service.dart';
 
 class MainScreen extends StatefulWidget {
@@ -244,35 +244,19 @@ class _MainScreenState extends State<MainScreen> {
                     },
                   ),
                   _buildMenuItem(
-                    icon: Icons.palette_outlined,
-                    title: 'Chọn giao diện',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showThemeDialog(context);
-                    },
-                  ),
-                  _buildMenuItem(
                     icon: Icons.settings_outlined,
                     title: 'Cài đặt',
                     onTap: () {
                       Navigator.pop(context);
-                      setState(() => mucHienTai = 3);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SettingsScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
-              ),
-            ),
-
-            // Logout button
-            Container(
-              padding: const EdgeInsets.all(8),
-              child: _buildMenuItem(
-                icon: Icons.logout,
-                title: 'Đăng xuất',
-                onTap: () {
-                  Navigator.pop(context);
-                  _showLogoutDialog(context);
-                },
               ),
             ),
           ],
@@ -307,155 +291,5 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _showThemeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2C2C2E),
-        title: const Text(
-          'Choose Theme',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.light_mode, color: Colors.white),
-              title: const Text('Light', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dark_mode, color: Colors.white),
-              title: const Text('Dark', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.brightness_auto, color: Colors.white),
-              title: const Text('System', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  void _showUpgradeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2C2C2E),
-        title: Row(
-          children: [
-            const Icon(Icons.workspace_premium, color: Colors.green),
-            const SizedBox(width: 8),
-            const Text(
-              'Upgrade to PRO',
-              style: TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Get unlimited access to all features!',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-            ),
-            child: const Text('Upgrade'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showLogoutDialog(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2C2C2E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Đăng xuất',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: const Text(
-          'Bạn có chắc chắn muốn đăng xuất không?',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Đăng xuất'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && mounted) {
-      try {
-        // Show loading
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Text('Đang đăng xuất...'),
-                ],
-              ),
-              duration: Duration(seconds: 2),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        // Wait a bit for snackbar to show
-        await Future.delayed(const Duration(milliseconds: 500));
-
-        // Sign out
-        await _authService.signOut();
-
-        // Navigate to login using MaterialPageRoute
-        if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false,
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Lỗi đăng xuất: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-  }
 }

@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/article_model.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -10,6 +12,113 @@ class FirestoreService {
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
+
+  // Network connectivity check
+  Future<bool> _hasNetworkConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      print('❌ Network check failed: $e');
+      return false;
+    }
+  }
+
+  // Enhanced error handler for Firestore operations
+  Future<T?> _executeWithErrorHandling<T>(
+    String operationName,
+    Future<T> Function() operation, {
+    T? fallbackValue,
+    bool useOfflineCache = true,
+  }) async {
+    try {
+      // Check network connectivity first
+      final hasNetwork = await _hasNetworkConnection();
+
+      if (!hasNetwork) {
+        print('⚠️ No network connection for $operationName');
+        if (useOfflineCache) {
+          return await _getFromOfflineCache<T>(operationName);
+        }
+        return fallbackValue;
+      }
+
+      // Execute the operation
+      final result = await operation();
+
+      // Cache successful results
+      if (useOfflineCache && result != null) {
+        await _saveToOfflineCache(operationName, result);
+      }
+
+      return result;
+    } on FirebaseException catch (e) {
+      print('🔥 Firebase error in $operationName: ${e.code} - ${e.message}');
+      return await _handleFirebaseError(e, operationName, fallbackValue);
+    } on SocketException catch (e) {
+      print('🌐 Network error in $operationName: $e');
+      return useOfflineCache
+          ? await _getFromOfflineCache<T>(operationName) ?? fallbackValue
+          : fallbackValue;
+    } catch (e) {
+      print('❌ General error in $operationName: $e');
+      return fallbackValue;
+    }
+  }
+
+  // Handle specific Firebase errors
+  Future<T?> _handleFirebaseError<T>(
+    FirebaseException e,
+    String operationName,
+    T? fallbackValue
+  ) async {
+    switch (e.code) {
+      case 'unavailable':
+      case 'deadline-exceeded':
+      case 'resource-exhausted':
+        print('⏰ Firestore temporarily unavailable, using cache');
+        return await _getFromOfflineCache<T>(operationName) ?? fallbackValue;
+
+      case 'permission-denied':
+        print('🔒 Permission denied for $operationName');
+        return fallbackValue;
+
+      case 'unauthenticated':
+        print('👤 User not authenticated for $operationName');
+        return fallbackValue;
+
+      default:
+        print('🔥 Unhandled Firebase error: ${e.code}');
+        return fallbackValue;
+    }
+  }
+
+  // Offline cache management
+  Future<T?> _getFromOfflineCache<T>(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString('cache_$key');
+      if (cachedData != null) {
+        print('📱 Retrieved from offline cache: $key');
+        // For simple cases, return the cached string
+        // For complex objects, you'd need to implement proper JSON deserialization
+        return cachedData as T?;
+      }
+    } catch (e) {
+      print('❌ Cache retrieval error: $e');
+    }
+    return null;
+  }
+
+  Future<void> _saveToOfflineCache<T>(String key, T data) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      // Simple string cache - for complex objects, implement JSON serialization
+      await prefs.setString('cache_$key', data.toString());
+    } catch (e) {
+      print('❌ Cache save error: $e');
+    }
+  }
 
   // Tạo document ID hợp lệ từ link
   String _getDocumentId(String link) {
@@ -21,37 +130,39 @@ class FirestoreService {
 
   // Add bookmark
   Future<bool> addBookmark(ArticleModel article) async {
-    try {
-      if (currentUserId == null) {
-        print('Error: User not logged in');
-        return false;
-      }
+    return await _executeWithErrorHandling<bool>(
+      'addBookmark',
+      () async {
+        if (currentUserId == null) {
+          print('Error: User not logged in');
+          return false;
+        }
 
-      final docId = _getDocumentId(article.link);
-      print('Adding bookmark with ID: $docId for user: $currentUserId');
+        final docId = _getDocumentId(article.link);
+        print('Adding bookmark with ID: $docId for user: $currentUserId');
 
-      // Lưu article vào subcollection bookmarks
-      await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('bookmarks')
-          .doc(docId)
-          .set({
-        'title': article.title,
-        'link': article.link,
-        'description': article.description ?? '',
-        'pubDate': article.time,
-        'imageUrl': article.imageUrl,
-        'source': article.source,
-        'bookmarkedAt': FieldValue.serverTimestamp(),
-      });
+        // Lưu article vào subcollection bookmarks
+        await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('bookmarks')
+            .doc(docId)
+            .set({
+          'title': article.title,
+          'link': article.link,
+          'description': article.description ?? '',
+          'pubDate': article.time,
+          'imageUrl': article.imageUrl,
+          'source': article.source,
+          'bookmarkedAt': FieldValue.serverTimestamp(),
+        });
 
-      print('Bookmark added successfully');
-      return true;
-    } catch (e) {
-      print('Error adding bookmark: $e');
-      return false;
-    }
+        print('Bookmark added successfully');
+        return true;
+      },
+      fallbackValue: false,
+      useOfflineCache: false, // Don't cache bookmark operations
+    ) ?? false;
   }
 
   // Remove bookmark
@@ -82,29 +193,31 @@ class FirestoreService {
 
   // Check if article is bookmarked
   Future<bool> isBookmarked(String articleLink) async {
-    try {
-      if (currentUserId == null) {
-        print('Error: User not logged in');
-        return false;
-      }
+    return await _executeWithErrorHandling<bool>(
+      'isBookmarked_${_getDocumentId(articleLink)}',
+      () async {
+        if (currentUserId == null) {
+          print('Error: User not logged in');
+          return false;
+        }
 
-      final docId = _getDocumentId(articleLink);
-      print('Checking bookmark with ID: $docId for user: $currentUserId');
+        final docId = _getDocumentId(articleLink);
+        print('Checking bookmark with ID: $docId for user: $currentUserId');
 
-      DocumentSnapshot doc = await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('bookmarks')
-          .doc(docId)
-          .get();
+        DocumentSnapshot doc = await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('bookmarks')
+            .doc(docId)
+            .get();
 
-      final exists = doc.exists;
-      print('Bookmark exists: $exists');
-      return exists;
-    } catch (e) {
-      print('Error checking bookmark: $e');
-      return false;
-    }
+        final exists = doc.exists;
+        print('Bookmark exists: $exists');
+        return exists;
+      },
+      fallbackValue: false,
+      useOfflineCache: true,
+    ) ?? false;
   }
 
   // Get all bookmarks as stream

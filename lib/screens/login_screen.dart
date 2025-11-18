@@ -343,12 +343,17 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(28),
           ),
           backgroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            Icon(icon, color: iconColor, size: 24),
-            const SizedBox(width: 12),
+            // Icon positioned on the left
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            // Centered text
             Text(
               text,
               style: const TextStyle(
@@ -375,6 +380,7 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(28),
           ),
           backgroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         child: _isGoogleLoading
             ? const SizedBox(
@@ -385,32 +391,35 @@ class _LoginScreenState extends State<LoginScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4285F4)),
                 ),
               )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+            : Stack(
+                alignment: Alignment.center,
                 children: [
-                  // Google logo colors
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.grey.shade300,
-                        width: 0.5,
+                  // Icon positioned on the left
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 0.5,
+                        ),
                       ),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'G',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4285F4),
+                      child: const Center(
+                        child: Text(
+                          'G',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4285F4),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  // Centered text
                   const Text(
                     'Tiếp tục với Google',
                     style: TextStyle(

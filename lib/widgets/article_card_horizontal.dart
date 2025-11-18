@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/article_model.dart';
 import '../screens/article_detail_screen.dart'; // 👈 để mở trang chi tiết
 import '../utils/date_formatter.dart';
+import 'safe_network_image.dart';
 
 class ArticleCardHorizontal extends StatelessWidget {
   final ArticleModel article;
@@ -32,8 +33,8 @@ class ArticleCardHorizontal extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 🖼 Ảnh bài viết
-              Image.network(
-                article.imageUrl,
+              CachedSafeImage(
+                imageUrl: article.imageUrl,
                 width: double.infinity,
                 height: 150,
                 fit: BoxFit.cover,

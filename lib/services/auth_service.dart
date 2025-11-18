@@ -3,6 +3,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'notification_service.dart';
 
 
 class AuthService {
@@ -16,6 +19,138 @@ class AuthService {
 
   // Stream to listen to auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  // Initialize authentication persistence
+  Future<void> initializeAuth() async {
+    try {
+      // Note: Firebase Auth on Android automatically has persistence enabled
+      // setPersistence() is only for web platforms
+      print('🔵 Firebase Auth persistence is automatically enabled on Android');
+
+      // Check if user is already signed in
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        print('🟢 User already signed in: ${currentUser.email}');
+        await _saveLoginState(true, currentUser.uid);
+
+        // Initialize notification service for signed-in user
+        await _initializeNotificationsForUser();
+      } else {
+        print('🟡 No user currently signed in');
+        await _saveLoginState(false, null);
+      }
+    } catch (e) {
+      print('🔴 Error initializing auth persistence: $e');
+    }
+  }
+
+  // Save login state to SharedPreferences
+  Future<void> _saveLoginState(bool isLoggedIn, String? userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', isLoggedIn);
+      if (userId != null) {
+        await prefs.setString('user_id', userId);
+      } else {
+        await prefs.remove('user_id');
+      }
+      print('🔵 Login state saved: $isLoggedIn');
+    } catch (e) {
+      print('🔴 Error saving login state: $e');
+    }
+  }
+
+  // Get login state from SharedPreferences
+  Future<Map<String, dynamic>> getLoginState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isLoggedIn = prefs.getBool('is_logged_in') ?? false;
+      final userId = prefs.getString('user_id');
+      final currentUser = _auth.currentUser;
+
+      // Verify consistency between SharedPreferences and Firebase Auth
+      final isActuallyLoggedIn = currentUser != null && isLoggedIn;
+
+      return {
+        'isLoggedIn': isActuallyLoggedIn,
+        'userId': currentUser?.uid ?? userId,
+        'user': currentUser,
+      };
+    } catch (e) {
+      print('🔴 Error getting login state: $e');
+      return {
+        'isLoggedIn': false,
+        'userId': null,
+        'user': null,
+      };
+    }
+  }
+
+  // Initialize notifications for signed-in user
+  Future<void> _initializeNotificationsForUser() async {
+    try {
+      // Import NotificationService và start background checking
+      final notificationService = NotificationService();
+      final notificationsEnabled = await notificationService.areNotificationsEnabled();
+
+      if (notificationsEnabled) {
+        print('🔔 Starting notifications for signed-in user');
+        await notificationService.startBackgroundNewsCheck();
+      } else {
+        print('🔕 Notifications disabled for user');
+      }
+    } catch (e) {
+      print('🔴 Error initializing notifications: $e');
+    }
+  }
+
+  // Check if user is currently authenticated
+  Future<bool> isUserAuthenticated() async {
+    final loginState = await getLoginState();
+    return loginState['isLoggedIn'] as bool;
+  }
+
+  // Network connectivity check
+  Future<bool> _hasNetworkConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (e) {
+      print('❌ Network check failed: $e');
+      return false;
+    }
+  }
+
+  // Enhanced error handler for auth operations
+  Future<T?> _executeAuthOperation<T>(
+    String operationName,
+    Future<T> Function() operation,
+    {T? fallbackValue}
+  ) async {
+    try {
+      // Check network first
+      final hasNetwork = await _hasNetworkConnection();
+      if (!hasNetwork) {
+        print('⚠️ No network connection for $operationName');
+        throw const SocketException('No network connection');
+      }
+
+      return await operation();
+    } on FirebaseAuthException catch (e) {
+      print('🔥 Firebase Auth error in $operationName: ${e.code} - ${e.message}');
+      rethrow; // Re-throw for specific handling
+    } on FirebaseException catch (e) {
+      print('🔥 Firebase error in $operationName: ${e.code} - ${e.message}');
+      rethrow;
+    } on SocketException catch (e) {
+      print('🌐 Network error in $operationName: $e');
+      rethrow;
+    } catch (e) {
+      print('❌ General error in $operationName: $e');
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> checkEmailExists(String email) async {
     try {
       print('🔵 [CheckEmail] Starting check for: $email');
@@ -131,6 +266,14 @@ class AuthService {
         'bookmarks': [],
       });
 
+      // ✅ Save login state after successful signup
+      if (userCredential.user != null) {
+        await _saveLoginState(true, userCredential.user!.uid);
+
+        // ✅ Initialize notifications for new user
+        await _initializeNotificationsForUser();
+      }
+
       print('🟢 Email/password account created successfully');
       return null; // Success
 
@@ -220,6 +363,12 @@ class AuthService {
       if (userCredential.user != null) {
         await _ensureSingleProvider(userCredential.user!.uid, 'password');
 
+        // ✅ Save login state
+        await _saveLoginState(true, userCredential.user!.uid);
+
+        // ✅ Initialize notifications for signed-in user
+        await _initializeNotificationsForUser();
+
         // Update last login time (non-blocking)
         _firestore.collection('users').doc(userCredential.user!.uid).update({
           'lastLoginAt': FieldValue.serverTimestamp(),
@@ -268,6 +417,13 @@ class AuthService {
     GoogleSignInAccount? googleUser;
 
     try {
+      // Check network first
+      final hasNetwork = await _hasNetworkConnection();
+      if (!hasNetwork) {
+        print('⚠️ No network connection for Google Sign In');
+        return '❌ Không có kết nối mạng. Vui lòng kiểm tra kết nối và thử lại.';
+      }
+
       print('🔵 Starting Google Sign In...');
 
       // ✅ STEP 1: Trigger Google authentication flow
@@ -280,299 +436,91 @@ class AuthService {
 
       final email = googleUser.email;
       print('🔵 Google user email: $email');
-      print('🔵 Email type: ${email.runtimeType}');
-      print('🔵 Email length: ${email.length}');
-      print('🔵 Email trimmed: "${email.trim()}"');
 
-      // ✅ STEP 2A: Check Firebase Auth for existing methods
-      List<String> existingMethods = [];
+      // ✅ STEP 2: Check for existing users with password provider
       try {
-        // ignore: deprecated_member_use
-        existingMethods = await _auth
-            .fetchSignInMethodsForEmail(email)
-            .timeout(
-              const Duration(seconds: 3),
-              onTimeout: () {
-                print('⚡ fetchSignInMethodsForEmail timeout - continuing');
-                return [];
-              },
-            );
-        print('🔵 Existing sign-in methods for $email: $existingMethods');
-      } catch (e) {
-        print('🟡 Could not fetch sign-in methods (might be new user): $e');
-      }
-
-      // ✅ STEP 2B: CRITICAL - Check Firestore for existing user with THIS EMAIL
-      print('🔵 ========================================');
-      print('🔵 CHECKING FIRESTORE FOR EXISTING USER');
-      print('🔵 ========================================');
-      print('🔵 Email being checked: "$email"');
-      print('🔵 Query: collection("users").where("email", isEqualTo: "$email")');
-
-      bool emailAlreadyExists = false;
-      bool hasPasswordProvider = false;
-      bool hasGoogleProvider = false; // ✅ NEW: Track if user has Google provider
-      String? existingProvider;
-
-      try {
-        print('🔵 Executing Firestore query...');
         final existingUserQuery = await _firestore
             .collection('users')
             .where('email', isEqualTo: email)
             .limit(1)
             .get();
 
-        print('🔵 ========================================');
-        print('🔵 FIRESTORE QUERY RESULT');
-        print('🔵 ========================================');
-        print('🔵 Documents returned: ${existingUserQuery.docs.length}');
-
         if (existingUserQuery.docs.isNotEmpty) {
-          emailAlreadyExists = true;
-          final existingUserDoc = existingUserQuery.docs.first;
-          final userData = existingUserDoc.data();
+          final userData = existingUserQuery.docs.first.data();
           final providers = List<String>.from(userData['providers'] ?? []);
-          final existingEmail = userData['email'] as String?;
 
-          print('🔵 Found existing user in Firestore:');
-          print('   - Email: $existingEmail');
-          print('   - Providers: $providers');
-          print('   - UID: ${existingUserDoc.id}');
-
-          if (providers.isNotEmpty) {
-            existingProvider = providers[0];
-          }
-
-          if (providers.contains('password')) {
-            hasPasswordProvider = true;
-            print('🔴 DETECTED: User has password provider in Firestore');
-          }
-
-          if (providers.contains('google.com')) {
-            hasGoogleProvider = true;
-            print('🟢 DETECTED: User has google.com provider - allowing re-login');
-          }
-        } else {
-          print('🟡 Query where() returned 0 documents');
-          print('🟡 Trying alternative check: Get all users and filter manually...');
-
-          // Alternative check: Get all users and filter
-          try {
-            final allUsers = await _firestore.collection('users').get();
-            print('🔵 Total users in database: ${allUsers.docs.length}');
-
-            for (var doc in allUsers.docs) {
-              final data = doc.data();
-              final docEmail = data['email'] as String?;
-
-              if (docEmail != null) {
-                final docEmailTrimmed = docEmail.trim().toLowerCase();
-                final searchEmailTrimmed = email.trim().toLowerCase();
-
-                print('🔵 Comparing: "$docEmailTrimmed" == "$searchEmailTrimmed"');
-
-                if (docEmailTrimmed == searchEmailTrimmed) {
-                  print('🔴 FOUND MATCH! User exists with this email');
-                  emailAlreadyExists = true;
-
-                  final providers = List<String>.from(data['providers'] ?? []);
-                  print('🔵 User providers: $providers');
-
-                  if (providers.contains('password')) {
-                    hasPasswordProvider = true;
-                    existingProvider = 'Email/Password';
-                    print('🔴 DETECTED: User has password provider (manual check)');
-                  }
-
-                  if (providers.contains('google.com')) {
-                    hasGoogleProvider = true;
-                    print('🟢 DETECTED: User has google.com provider (manual check)');
-                  }
-                  break;
-                }
-              }
-            }
-
-            if (!emailAlreadyExists) {
-              print('🟢 No existing user found in Firestore with this email (manual check)');
-            }
-          } catch (manualCheckError) {
-            print('🔴 Manual check also failed: $manualCheckError');
+          // Block if user exists with password provider only
+          if (providers.contains('password') && !providers.contains('google.com')) {
+            print('🔴 User exists with password provider - BLOCKING Google login');
+            await _googleSignIn.signOut();
+            return '❌ Email này đã được đăng ký bằng Email/Mật khẩu.';
           }
         }
       } catch (e) {
-        print('🟡 Layer 1 (Firestore check) failed: $e');
-        print('🟡 Falling back to Layer 2 (Firebase Auth check)');
+        print('🟡 Firestore check failed: $e');
+        // Continue with sign-in
       }
 
-      // ✅ STEP 2C: Also check Firebase Auth methods
-      if (existingMethods.isNotEmpty && !existingMethods.contains('google.com')) {
-        print('🔴 DETECTED: Email exists in Firebase Auth with methods: $existingMethods');
-        emailAlreadyExists = true;
-
-        if (existingMethods.contains('password')) {
-          hasPasswordProvider = true;
-          existingProvider = 'Email/Password';
-          print('🔴 DETECTED: User has password provider in Firebase Auth');
-        }
-      }
-
-      // ✅ STEP 3: BLOCK ONLY if email has PASSWORD provider
-      print('🔵 ========================================');
-      print('🔵 DECISION MAKING');
-      print('🔵 ========================================');
-      print('🔵 emailAlreadyExists: $emailAlreadyExists');
-      print('🔵 hasPasswordProvider: $hasPasswordProvider');
-      print('🔵 hasGoogleProvider: $hasGoogleProvider');
-      print('🔵 existingProvider: $existingProvider');
-
-      // ⚡ NEW LOGIC: Only block if password provider exists, allow Google re-login
-      if (hasPasswordProvider) {
-        print('🔴 ========================================');
-        print('🔴 BLOCKING GOOGLE LOGIN');
-        print('🔴 ========================================');
-        print('🔴 Reason: EMAIL ALREADY IN USE WITH PASSWORD PROVIDER');
-        print('🔴 Email: $email');
-        print('🔴 Existing provider: $existingProvider');
-        print('🔴 Action: Preventing duplicate account creation');
-        print('🔴 Cleaning up Google session...');
-        await _googleSignIn.signOut();
-        print('🔴 Google sign out completed');
-        print('🔴 Returning error message to user');
-        return '❌ Email này đã được đăng ký bằng Email/Mật khẩu.';
-      }
-
-      if (hasGoogleProvider) {
-        print('🟢 ========================================');
-        print('🟢 GOOGLE RE-LOGIN DETECTED');
-        print('🟢 ========================================');
-        print('🟢 User is logging back in with same Google account');
-        print('🟢 Allowing sign-in...');
-      } else {
-        print('🟢 ========================================');
-        print('🟢 NEW GOOGLE ACCOUNT');
-        print('🟢 ========================================');
-        print('🟢 Creating new account with Google provider');
-      }
-
-      // ✅ STEP 4: Get Google authentication tokens
+      // ✅ STEP 3: Get Google authentication tokens
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       print('🔵 Got Google authentication tokens');
 
-      // ✅ STEP 5: Create Firebase credential
+      // ✅ STEP 4: Create Firebase credential
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
       print('🔵 Created Firebase credential');
 
+      // ✅ STEP 5: Sign in to Firebase
+      final userCredential = await _auth.signInWithCredential(credential);
+      print('🟢 Firebase Auth Sign In Successful');
 
-      // ✅ STEP 6: Sign in to Firebase with Google credential
-      print('🔵 ========================================');
-      print('🔵 CALLING signInWithCredential()');
-      print('🔵 ========================================');
+      // ✅ STEP 6: Create or update user document
+      await _createOrUpdateGoogleUserDocument(
+        userCredential: userCredential,
+        email: email,
+        photoURL: googleUser.photoUrl,
+      );
 
-      UserCredential userCredential;
-      try {
-        userCredential = await _auth.signInWithCredential(credential);
+      // ✅ STEP 7: Save login state
+      if (userCredential.user != null) {
+        await _saveLoginState(true, userCredential.user!.uid);
 
-        print('🟢 ========================================');
-        print('🟢 FIREBASE AUTH SIGN IN SUCCESSFUL');
-        print('🟢 ========================================');
-        print('🟢 Email: ${userCredential.user?.email}');
-        print('🟢 UID: ${userCredential.user?.uid}');
-        print('🟢 Display Name: ${userCredential.user?.displayName}');
-        print('🟢 Creation Time: ${userCredential.user?.metadata.creationTime}');
-        print('🟢 Last Sign In: ${userCredential.user?.metadata.lastSignInTime}');
-
-        // 🚨 CRITICAL POST-SIGN-IN CHECK: Only block if password provider exists
-        if (hasPasswordProvider && !hasGoogleProvider) {
-          print('🔴🔴🔴 CRITICAL VIOLATION DETECTED 🔴🔴🔴');
-          print('🔴 Email "$email" already exists with PASSWORD provider!');
-          print('🔴 This violates single-email policy');
-          print('🔴 Checking if this is a NEW account or existing account...');
-
-          // Check if this is actually a new account created
-          final signedInUser = userCredential.user;
-          if (signedInUser != null) {
-            final metadata = signedInUser.metadata;
-            final isNewAccount = metadata.creationTime != null &&
-                                metadata.lastSignInTime != null &&
-                                metadata.creationTime!.difference(metadata.lastSignInTime!).inSeconds.abs() < 5;
-
-            if (isNewAccount) {
-              print('🔴 DETECTED: This is a NEWLY CREATED account (creation time ≈ sign-in time)');
-              print('🔴 DELETING this duplicate account immediately...');
-
-              try {
-                await signedInUser.delete();
-                print('🟢 Successfully deleted duplicate Google account');
-              } catch (deleteError) {
-                print('🔴 Failed to delete account: $deleteError');
-              }
-
-              await _auth.signOut();
-              await _googleSignIn.signOut();
-
-              return '❌ Email này đã được đăng ký bằng Email/Mật khẩu. Vui lòng đăng nhập bằng email/mật khẩu.';
-            } else {
-              print('🟡 This appears to be an existing Google account, allowing sign in');
-            }
-          }
-        } else if (hasGoogleProvider) {
-          print('🟢 Google account re-login successful');
-        }
-
-      } on FirebaseAuthException catch (e) {
-        // Handle account exists with different credential
-        if (e.code == 'account-exists-with-different-credential') {
-          print('🔴 Account exists with different credential');
-          await _googleSignIn.signOut();
-          return '❌ Email này đã được đăng ký bằng phương thức khác. Vui lòng sử dụng phương thức đăng nhập ban đầu.';
-        }
-        rethrow; // Re-throw other Firebase auth errors
-      }
-
-      // ✅ STEP 7: Create or update user document - enforce single provider
-      try {
-        await _createOrUpdateGoogleUserDocument(
-          userCredential: userCredential,
-          email: email,
-          photoURL: googleUser.photoUrl,
-        );
-      } catch (e) {
-        // Safety check failed - user has password provider
-        print('🔴 Safety check exception: $e');
-        await _googleSignIn.signOut();
-        return '❌ Email này đã được đăng ký bằng Email/Mật khẩu. Vui lòng đăng nhập bằng email/mật khẩu thay vì Google.';
+        // ✅ Initialize notifications for signed-in user
+        await _initializeNotificationsForUser();
       }
 
       return null; // Success
 
     } on FirebaseAuthException catch (e) {
-      print('🔴 FirebaseAuthException: ${e.code} - ${e.message}');
+      print('🔥 Firebase Auth error: ${e.code} - ${e.message}');
 
-      // Handle account exists with different credential (safety net)
-      if (e.code == 'account-exists-with-different-credential') {
+      if (googleUser != null) {
         await _googleSignIn.signOut();
-        return '❌ Email này đã được đăng ký bằng phương thức khác. Vui lòng sử dụng phương thức đăng nhập ban đầu.';
       }
 
-      await _googleSignIn.signOut(); // Clean up Google session
-
       switch (e.code) {
+        case 'account-exists-with-different-credential':
+          return '❌ Email này đã được đăng ký bằng phương thức khác.';
         case 'invalid-credential':
           return 'Thông tin xác thực Google không hợp lệ.';
-        case 'operation-not-allowed':
-          return 'Đăng nhập Google chưa được kích hoạt. Vui lòng liên hệ quản trị viên.';
         case 'user-disabled':
           return 'Tài khoản này đã bị vô hiệu hóa.';
         default:
           return 'Lỗi đăng nhập Google: ${e.message}';
       }
+    } on SocketException catch (e) {
+      print('🌐 Network error: $e');
+      if (googleUser != null) {
+        await _googleSignIn.signOut();
+      }
+      return '❌ Lỗi mạng. Vui lòng kiểm tra kết nối và thử lại.';
     } catch (e) {
-      print('🔴 Google Sign In exception: $e');
-      await _googleSignIn.signOut(); // Clean up
+      print('❌ Google Sign In error: $e');
+      if (googleUser != null) {
+        await _googleSignIn.signOut();
+      }
       return 'Đã xảy ra lỗi: $e';
     }
   }
@@ -722,8 +670,23 @@ class AuthService {
   // SIGN OUT
   Future<void> signOut() async {
     print('🔵 Signing out...');
+
+    // Stop notifications
+    try {
+      final notificationService = NotificationService();
+      await notificationService.stopBackgroundNewsCheck();
+      print('🔔 Stopped background notifications');
+    } catch (e) {
+      print('🟡 Warning: Could not stop notifications: $e');
+    }
+
+    // Clear login state
+    await _saveLoginState(false, null);
+
+    // Sign out from providers
     await _googleSignIn.signOut();
     await _auth.signOut();
+
     print('🟢 Signed out successfully');
   }
   // SEND PASSWORD RESET EMAIL (Legacy)
