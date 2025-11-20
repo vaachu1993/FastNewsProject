@@ -5,6 +5,8 @@ import '../widgets/article_card_horizontal.dart';
 import '../services/rss_service.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../utils/app_localizations.dart';
+import '../widgets/localization_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +31,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   User? _currentUser;
   Map<String, dynamic>? _userData;
 
+  // Track language to reload on change
+  String? _previousLanguage;
+
   final List<String> categories = RssService.getCategories();
 
   @override
@@ -44,6 +49,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _loadUserData();
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Check for language change
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+
+    if (_previousLanguage != null && _previousLanguage != currentLanguage) {
+      // Language changed, reload data
+      _previousLanguage = currentLanguage;
+      Future.microtask(() {
+        if (mounted) {
+          setState(() {
+            selectedCategory = 0;
+            isLoading = true;
+          });
+          _loadNews(isInitial: true);
+          _loadFavoriteTopicsNews();
+        }
+      });
+    } else if (_previousLanguage == null) {
+      _previousLanguage = currentLanguage;
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -125,14 +156,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black87),
+            icon: Icon(Icons.menu, color: Theme.of(context).iconTheme.color),
             onPressed: () {
               // Find the root Scaffold (MainScreen's Scaffold)
               final scaffoldState = context.findRootAncestorStateOfType<ScaffoldState>();
@@ -148,17 +183,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               height: 28,
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'FastNews',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
           ],
         ),
         actions: [
-          const Icon(Icons.notifications_outlined, color: Colors.black87),
+          Icon(Icons.notifications_outlined, color: Theme.of(context).iconTheme.color),
           const SizedBox(width: 10),
           CircleAvatar(
             radius: 15,
@@ -198,18 +233,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Tin nổi bật',
+                            Text(
+                              loc.translate('featured_news'),
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
+                                color: Theme.of(context).textTheme.bodyLarge?.color,
                               ),
                             ),
                             TextButton(
                               onPressed: () {},
-                              child: const Text(
-                                'Xem tất cả',
-                                style: TextStyle(color: Colors.green),
+                              child: Text(
+                                loc.translate('view_all'),
+                                style: const TextStyle(color: Colors.green),
                               ),
                             ),
                           ],
@@ -245,7 +281,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   decoration: BoxDecoration(
                                     color: isSelected
                                         ? Colors.green
-                                        : Colors.grey.shade200,
+                                        : Theme.of(context).brightness == Brightness.dark
+                                            ? const Color(0xFF2A2740)
+                                            : Colors.grey.shade200,
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: isSelected
                                         ? [
@@ -261,11 +299,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     duration: const Duration(milliseconds: 250),
                                     curve: Curves.easeInOut,
                                     style: TextStyle(
-                                      color: isSelected ? Colors.white : Colors.black,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Theme.of(context).textTheme.bodyLarge?.color,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14,
                                     ),
-                                    child: Text(categories[index]),
+                                    child: Text(_translateCategory(categories[index], currentLanguage)),
                                   ),
                                 ),
                               );
@@ -287,11 +327,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     size: 24,
                                   ),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    'Danh mục yêu thích',
+                                  Text(
+                                    loc.favoriteTopics,
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).textTheme.bodyLarge?.color,
                                     ),
                                   ),
                                 ],
@@ -335,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      topic,
+                                      _translateCategory(topic, currentLanguage),
                                       style: const TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
@@ -427,18 +468,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Tin toàn cầu',
-                              style: TextStyle(
+                            Text(
+                              loc.translate('global_news'),
+                              style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             TextButton(
                               onPressed: () {},
-                              child: const Text(
-                                'Xem tất cả',
-                                style: TextStyle(color: Colors.green),
+                              child: Text(
+                                loc.translate('view_all'),
+                                style: const TextStyle(color: Colors.green),
                               ),
                             ),
                           ],
@@ -525,5 +566,37 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       default:
         return '📰';
     }
+  }
+
+  String _translateCategory(String category, String currentLanguage) {
+    if (currentLanguage == 'en') {
+      switch (category) {
+        case 'Tất cả':
+          return 'All';
+        case 'Mới nhất':
+          return 'Latest';
+        case 'Chính trị':
+          return 'Politics';
+        case 'Kinh doanh':
+          return 'Business';
+        case 'Công nghệ':
+          return 'Technology';
+        case 'Thể thao':
+          return 'Sports';
+        case 'Giải trí':
+          return 'Entertainment';
+        case 'Sức khỏe':
+          return 'Health';
+        case 'Khoa học':
+          return 'Science';
+        case 'Thế giới':
+          return 'World';
+        case 'Đời sống':
+          return 'Lifestyle';
+        default:
+          return category;
+      }
+    }
+    return category; // Return original if Vietnamese
   }
 }

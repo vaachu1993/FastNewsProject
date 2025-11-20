@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/article_model.dart';
 import '../widgets/article_card_horizontal.dart';
 import '../services/rss_service.dart';
+import '../utils/app_localizations.dart';
+import '../widgets/localization_provider.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -19,6 +21,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
+  // Track language to reload on change
+  String? _previousLanguage;
+
   final List<String> tags = RssService.getCategories();
 
   @override
@@ -27,6 +32,30 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     _loadNews(isInitial: true);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Check for language change
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+
+    if (_previousLanguage != null && _previousLanguage != currentLanguage) {
+      // Language changed, reload data
+      _previousLanguage = currentLanguage;
+      Future.microtask(() {
+        if (mounted) {
+          setState(() {
+            selectedTag = 0;
+            isLoading = true;
+          });
+          _loadNews(isInitial: true);
+        }
+      });
+    } else if (_previousLanguage == null) {
+      _previousLanguage = currentLanguage;
+    }
+  }
 
   @override
   void dispose() {
@@ -62,16 +91,55 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
   }
 
+  String _translateCategory(String category, String currentLanguage) {
+    if (currentLanguage == 'en') {
+      switch (category) {
+        case 'Tất cả':
+          return 'All';
+        case 'Mới nhất':
+          return 'Latest';
+        case 'Chính trị':
+          return 'Politics';
+        case 'Kinh doanh':
+          return 'Business';
+        case 'Công nghệ':
+          return 'Technology';
+        case 'Thể thao':
+          return 'Sports';
+        case 'Giải trí':
+          return 'Entertainment';
+        case 'Sức khỏe':
+          return 'Health';
+        case 'Khoa học':
+          return 'Science';
+        case 'Thế giới':
+          return 'World';
+        case 'Đời sống':
+          return 'Lifestyle';
+        default:
+          return category;
+      }
+    }
+    return category;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Khám phá',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        title: Text(
+          loc.discover,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
         ),
         centerTitle: true,
       ),
@@ -87,28 +155,63 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Tìm kiếm tin tức...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                _searchArticles('');
-                              },
-                            )
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: Theme.of(context).brightness == Brightness.light
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
                           : null,
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
                     ),
-                    onChanged: _searchArticles,
+                    child: TextField(
+                      controller: _searchController,
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+                      decoration: InputDecoration(
+                        hintText: currentLanguage == 'vi'
+                            ? 'Tìm kiếm tin tức...'
+                            : 'Search news...',
+                        hintStyle: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+                        prefixIcon: Icon(Icons.search, color: Theme.of(context).iconTheme.color),
+                        suffixIcon: searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear, color: Theme.of(context).iconTheme.color),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _searchArticles('');
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF2A2740)
+                            : Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: Theme.of(context).brightness == Brightness.light
+                              ? BorderSide(color: Colors.grey.shade300, width: 1)
+                              : BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: Theme.of(context).brightness == Brightness.light
+                              ? BorderSide(color: Colors.grey.shade300, width: 1)
+                              : BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide(
+                            color: Colors.green,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      onChanged: _searchArticles,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -129,13 +232,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? Colors.green
-                                  : Colors.green.withValues(alpha: 0.15),
+                                  : Theme.of(context).brightness == Brightness.dark
+                                      ? const Color(0xFF2A2740)
+                                      : Colors.green.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              tags[index],
+                              _translateCategory(tags[index], currentLanguage),
                               style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.green,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.green,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -150,13 +257,26 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     children: [
                       Text(
                         searchQuery.isEmpty
-                            ? 'Tin tức ${tags[selectedTag]}'
-                            : 'Kết quả tìm kiếm',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            ? (currentLanguage == 'vi'
+                                ? 'Tin tức ${_translateCategory(tags[selectedTag], currentLanguage)}'
+                                : '${_translateCategory(tags[selectedTag], currentLanguage)} News')
+                            : (currentLanguage == 'vi'
+                                ? 'Kết quả tìm kiếm'
+                                : 'Search Results'),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
                       ),
                       Text(
-                        '${filteredArticles.length} bài viết',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        currentLanguage == 'vi'
+                            ? '${filteredArticles.length} bài viết'
+                            : '${filteredArticles.length} articles',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
                       ),
                     ],
                   ),
@@ -170,9 +290,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                         padding: const EdgeInsets.all(32.0),
                         child: Text(
                           searchQuery.isEmpty
-                              ? 'Không có tin tức nào'
-                              : 'Không tìm thấy kết quả cho "$searchQuery"',
-                          style: const TextStyle(fontSize: 16, color: Colors.grey),
+                              ? (currentLanguage == 'vi'
+                                  ? 'Không có tin tức nào'
+                                  : 'No articles')
+                              : (currentLanguage == 'vi'
+                                  ? 'Không tìm thấy kết quả cho "$searchQuery"'
+                                  : 'No results found for "$searchQuery"'),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -218,3 +345,4 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 }
+

@@ -1,5 +1,6 @@
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import '../utils/html_utils.dart';
 
 class ArticleModel {
   final String id; // Unique ID for tracking
@@ -12,19 +13,32 @@ class ArticleModel {
 
   ArticleModel({
     String? id,
-    required this.title,
+    required String title,
     required this.source,
     required this.time,
     required this.imageUrl,
     required this.link,
-    this.description,
-  }) : id = id ?? _generateId(link);
+    String? description,
+  }) : id = id ?? _generateId(link),
+       title = _decodeHtmlEntities(title),
+       description = description != null ? _decodeHtmlEntities(description) : null;
 
   // Generate unique ID from link
   static String _generateId(String link) {
     var bytes = utf8.encode(link);
     var digest = sha256.convert(bytes);
     return digest.toString().substring(0, 16);
+  }
+
+  // Decode HTML entities like &quot;, &#39;, &amp;, etc.
+  static String _decodeHtmlEntities(String text) {
+    try {
+      // Use HtmlUtils for comprehensive HTML entity decoding
+      return HtmlUtils.decodeHtmlEntities(text);
+    } catch (e) {
+      // If decoding fails, return original text
+      return text;
+    }
   }
 
   // Convert to/from JSON for storage

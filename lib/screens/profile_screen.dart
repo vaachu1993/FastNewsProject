@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../utils/app_localizations.dart';
+import '../widgets/localization_provider.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -16,10 +18,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
 
+  // Track language to reload on change
+  String? _previousLanguage;
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Check for language change
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+
+    if (_previousLanguage != null && _previousLanguage != currentLanguage) {
+      // Language changed, just update UI
+      _previousLanguage = currentLanguage;
+      if (mounted) {
+        setState(() {});
+      }
+    } else if (_previousLanguage == null) {
+      _previousLanguage = currentLanguage;
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -31,16 +55,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _handleLogout() async {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Đăng xuất'),
-        content: const Text('Bạn có chắc chắn muốn đăng xuất không?'),
+        title: Text(loc.translate('logout_dialog_title')),
+        content: Text(loc.translate('logout_dialog_content')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text(loc.translate('cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -48,7 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Đăng xuất'),
+            child: Text(loc.translate('logout')),
           ),
         ],
       ),
@@ -68,16 +96,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Trang cá nhân',
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        title: Text(
+          loc.profile,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
           ),
         ),
         centerTitle: true,
@@ -85,7 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: _handleLogout,
-            tooltip: 'Đăng xuất',
+            tooltip: loc.translate('logout_tooltip'),
           ),
         ],
       ),
@@ -98,20 +130,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _buildProfileAvatar(),
                     const SizedBox(height: 10),
-                    Row(
+                      Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          _userData?['displayName'] ?? _currentUser?.displayName ?? 'Người dùng',
-                          style: const TextStyle(
+                          _userData?['displayName'] ?? _currentUser?.displayName ?? loc.translate('user'),
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
                         if (_userData?['emailVerified'] == true) ...[
                           const SizedBox(width: 6),
                           Tooltip(
-                            message: 'Email đã xác thực',
+                            message: loc.translate('email_verified_tooltip'),
                             child: Container(
                               padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
@@ -129,8 +162,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                     Text(
-                      _userData?['email'] ?? _currentUser?.email ?? 'Không có email',
-                      style: const TextStyle(color: Colors.grey),
+                      _userData?['email'] ?? _currentUser?.email ?? loc.translate('no_email'),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
                     ),
                     const SizedBox(height: 16),
                     // User info card
@@ -145,24 +178,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             _buildInfoRow(
                               Icons.person,
-                              'Tên',
-                              _userData?['displayName'] ?? _currentUser?.displayName ?? 'Chưa cập nhật',
+                              loc.translate('name_label'),
+                              _userData?['displayName'] ?? _currentUser?.displayName ?? loc.translate('not_updated'),
                             ),
                             const Divider(),
                             _buildInfoRow(
                               Icons.email,
-                              'Email',
-                              _userData?['email'] ?? _currentUser?.email ?? 'Chưa cập nhật',
+                              loc.translate('email_label'),
+                              _userData?['email'] ?? _currentUser?.email ?? loc.translate('not_updated'),
                             ),
                             const Divider(),
                             _buildVerificationRow(),
                             const Divider(),
                             _buildInfoRow(
                               Icons.calendar_today,
-                              'Tham gia',
+                              loc.translate('joined_label'),
                               _currentUser?.metadata.creationTime != null
                                   ? _formatDate(_currentUser!.metadata.creationTime!)
-                                  : 'Chưa xác định',
+                                  : loc.translate('not_determined'),
                             ),
                           ],
                         ),
@@ -260,17 +293,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(width: 12),
           Text(
             '$label:',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.grey,
+              style: TextStyle(
+                color: Theme.of(context).textTheme.bodySmall?.color,
                 fontSize: 14,
               ),
               overflow: TextOverflow.ellipsis,
@@ -282,6 +316,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildVerificationRow() {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     final isVerified = _userData?['emailVerified'] == true;
     final verificationMethod = _userData?['verificationMethod'] ?? 'unknown';
 
@@ -304,11 +342,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
             size: 20,
           ),
           const SizedBox(width: 12),
-          const Text(
-            'Trạng thái:',
+          Text(
+            '${loc.translate('status_label')}:',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
             ),
           ),
           const SizedBox(width: 8),
@@ -334,7 +373,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        isVerified ? 'Đã xác thực' : 'Chưa xác thực',
+                        isVerified ? loc.translate('verified') : loc.translate('not_verified'),
                         style: TextStyle(
                           color: isVerified ? Colors.green.shade700 : Colors.orange.shade700,
                           fontSize: 12,

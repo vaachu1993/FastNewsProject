@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/article_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/article_card_horizontal.dart';
+import '../utils/app_localizations.dart';
+import '../widgets/localization_provider.dart';
 
 class BookmarkScreen extends StatefulWidget {
   const BookmarkScreen({super.key});
@@ -15,14 +17,21 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Tin đã lưu',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        title: Text(
+          loc.bookmarksTitle,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
         ),
         centerTitle: true,
       ),
@@ -44,19 +53,22 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                   children: [
                     const Icon(Icons.error_outline, size: 48, color: Colors.red),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Đã xảy ra lỗi khi tải bookmark',
+                    Text(
+                      loc.translate('error_loading_bookmarks'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Vui lòng thử lại sau hoặc liên hệ hỗ trợ',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      loc.translate('please_try_again'),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
@@ -65,7 +77,7 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                         setState(() {}); // Reload
                       },
                       icon: const Icon(Icons.refresh),
-                      label: const Text('Thử lại'),
+                      label: Text(loc.retry),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF5A7D3C),
                         foregroundColor: Colors.white,
@@ -93,14 +105,20 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                     color: Colors.grey[400],
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Bạn chưa lưu bài viết nào.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  Text(
+                    loc.noBookmarks,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Hãy bắt đầu l��u những tin tức yêu thích!',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  Text(
+                    loc.translate('start_saving_articles'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
                   ),
                 ],
               ),
@@ -114,10 +132,11 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bài viết đã đánh dấu (${bookmarks.length})',
-                  style: const TextStyle(
+                  '${loc.translate('saved_articles')} (${bookmarks.length})',
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 12),

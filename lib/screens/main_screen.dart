@@ -7,6 +7,8 @@ import 'profile_screen.dart';
 import 'reading_history_screen.dart';
 import 'settings_screen.dart';
 import '../services/auth_service.dart';
+import '../utils/app_localizations.dart';
+import '../widgets/localization_provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -23,13 +25,6 @@ class _MainScreenState extends State<MainScreen> {
   // Add user data
   User? _currentUser;
   Map<String, dynamic>? _userData;
-
-  final List<Widget> pages = const [
-    HomeScreen(),
-    DiscoverScreen(),
-    BookmarkScreen(),
-    ProfileScreen(),
-  ];
 
   @override
   void initState() {
@@ -54,34 +49,46 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
+    // Create pages with keys based on language to force rebuild when language changes
+    final pages = [
+      HomeScreen(key: ValueKey('home_$currentLanguage')),
+      DiscoverScreen(key: ValueKey('discover_$currentLanguage')),
+      BookmarkScreen(key: ValueKey('bookmark_$currentLanguage')),
+      ProfileScreen(key: ValueKey('profile_$currentLanguage')),
+    ];
+
     return Scaffold(
       key: _scaffoldKey,
-      drawer: _buildDrawer(context),
+      drawer: _buildDrawer(context, loc),
       body: IndexedStack(
         index: mucHienTai,
         children: pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: mucHienTai,
-        onTap: (value) {
-          setState(() => mucHienTai = value);
-        },
-        selectedItemColor: Colors.green,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Khám phá'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.bookmark_outline), label: 'Đánh dấu'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Cá nhân'),
-        ],
-      ),
+            currentIndex: mucHienTai,
+            onTap: (value) {
+              setState(() => mucHienTai = value);
+            },
+            selectedItemColor: Colors.green,
+            unselectedItemColor: Colors.grey,
+            type: BottomNavigationBarType.fixed,
+            items: [
+              BottomNavigationBarItem(icon: const Icon(Icons.home), label: loc.home),
+              BottomNavigationBarItem(icon: const Icon(Icons.search), label: loc.discover),
+              BottomNavigationBarItem(
+                  icon: const Icon(Icons.bookmark_outline), label: loc.bookmarks),
+              BottomNavigationBarItem(
+                  icon: const Icon(Icons.person_outline), label: loc.profile),
+            ],
+          ),
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
+  Widget _buildDrawer(BuildContext context, AppLocalizations loc) {
     return Drawer(
       backgroundColor: const Color(0xFF1C1C1E),
       child: SafeArea(
@@ -117,7 +124,7 @@ class _MainScreenState extends State<MainScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _userData?['displayName'] ?? _currentUser?.displayName ?? 'User',
+                          _userData?['displayName'] ?? _currentUser?.displayName ?? loc.translate('user'),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -147,7 +154,7 @@ class _MainScreenState extends State<MainScreen> {
                 children: [
                   _buildMenuItem(
                     icon: Icons.diamond_outlined,
-                    title: 'Hôm nay',
+                    title: loc.translate('today'),
                     onTap: () {
                       Navigator.pop(context);
                       setState(() => mucHienTai = 0);
@@ -155,7 +162,7 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   _buildMenuItem(
                     icon: Icons.bookmark_outline,
-                    title: 'Đọc sau',
+                    title: loc.translate('read_later'),
                     onTap: () {
                       Navigator.pop(context);
                       setState(() => mucHienTai = 2);
@@ -163,11 +170,11 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Thể loại section
+                  // Categories section
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Text(
-                      'Thể loại',
+                      loc.translate('categories'),
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontSize: 12,
@@ -177,7 +184,7 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   _buildMenuItem(
                     icon: Icons.menu,
-                    title: 'Tất cả',
+                    title: loc.translate('all'),
                     trailing: Text(
                       '463',
                       style: TextStyle(
@@ -192,7 +199,7 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   _buildMenuItem(
                     icon: Icons.chevron_right,
-                    title: 'Công nghệ',
+                    title: loc.translate('technology'),
                     trailing: Text(
                       '453',
                       style: TextStyle(
@@ -220,9 +227,9 @@ class _MainScreenState extends State<MainScreen> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Thêm nội dung'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(loc.translate('add_content')),
                       ),
                     ),
                   ),
@@ -232,7 +239,7 @@ class _MainScreenState extends State<MainScreen> {
                   // Bottom menu items
                   _buildMenuItem(
                     icon: Icons.history,
-                    title: 'Đã đọc gần đây',
+                    title: loc.translate('recently_read'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -245,7 +252,7 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   _buildMenuItem(
                     icon: Icons.settings_outlined,
-                    title: 'Cài đặt',
+                    title: loc.translate('settings'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(

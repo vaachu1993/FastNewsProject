@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
+import '../utils/app_localizations.dart';
+import '../widgets/localization_provider.dart';
+import '../providers/theme_provider.dart';
 import 'login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,7 +21,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Settings states
   bool _pushNotifications = true;
-  bool _darkMode = false;
   String _selectedLanguage = 'Tiếng Việt';
 
   @override
@@ -35,6 +38,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _toggleNotifications(bool value) async {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     setState(() => _pushNotifications = value);
     await _notificationService.setNotificationsEnabled(value);
 
@@ -44,14 +51,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          value
-            ? '✅ Đã bật thông báo tin tức mới'
-            : '🔕 Đã tắt thông báo tin tức mới',
+          value ? loc.notificationEnabled : loc.notificationDisabled,
         ),
         backgroundColor: value ? Colors.green : Colors.grey[700],
         duration: const Duration(seconds: 2),
         action: value ? SnackBarAction(
-          label: 'Thử nghiệm',
+          label: loc.testNotification,
           textColor: Colors.white,
           onPressed: () async {
             await _notificationService.sendTestNotification();
@@ -63,19 +68,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
+    // Sync _selectedLanguage with currentLanguage
+    _selectedLanguage = currentLanguage == 'vi' ? 'Tiếng Việt' : 'English';
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Cài đặt',
+        title: Text(
+          loc.settings,
           style: TextStyle(
-            color: Colors.black,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -88,7 +100,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Account
           _buildSimpleListTile(
             icon: Icons.person_outline,
-            title: 'Tài khoản',
+            title: loc.account,
             onTap: () {
               // Navigate to account details
             },
@@ -98,69 +110,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Notifications
           _buildSwitchListTile(
             icon: Icons.notifications_outlined,
-            title: 'Thông báo',
+            title: loc.notifications,
             value: _pushNotifications,
             onChanged: _isLoadingNotificationState ? null : (val) => _toggleNotifications(val),
           ),
           _buildSimpleDivider(),
 
           // Dark Mode
-          _buildSwitchListTile(
-            icon: Icons.dark_mode_outlined,
-            title: 'Chế độ tối',
-            value: _darkMode,
-            onChanged: (val) => setState(() => _darkMode = val),
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return _buildSwitchListTile(
+                icon: Icons.dark_mode_outlined,
+                title: loc.darkMode,
+                value: themeProvider.isDarkMode,
+                onChanged: (val) async {
+                  await themeProvider.setDarkMode(val);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          val
+                            ? (currentLanguage == 'vi' ? '🌙 Đã bật chế độ tối' : '🌙 Dark mode enabled')
+                            : (currentLanguage == 'vi' ? '☀️ Đã bật chế độ sáng' : '☀️ Light mode enabled'),
+                        ),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+              );
+            },
           ),
           _buildSimpleDivider(),
 
           // Language
           _buildSimpleListTile(
             icon: Icons.language,
-            title: 'Ngôn ngữ',
-            onTap: () => _showLanguageDialog(),
+            title: loc.language,
+            onTap: () => _showLanguageDialog(loc),
           ),
           _buildSimpleDivider(),
 
           // Security
           _buildSimpleListTile(
             icon: Icons.security_outlined,
-            title: 'Bảo mật',
-            onTap: () => _showSecuritySettings(),
+            title: loc.security,
+            onTap: () => _showSecuritySettings(loc),
           ),
           _buildSimpleDivider(),
 
           // Terms & Conditions
           _buildSimpleListTile(
             icon: Icons.description_outlined,
-            title: 'Điều khoản & Điều kiện',
-            onTap: () => _showTermsOfService(),
+            title: loc.termsAndConditions,
+            onTap: () => _showTermsOfService(loc),
           ),
           _buildSimpleDivider(),
 
           // Privacy Policy
           _buildSimpleListTile(
             icon: Icons.privacy_tip_outlined,
-            title: 'Chính sách bảo mật',
-            onTap: () => _showPrivacyPolicy(),
+            title: loc.privacyPolicy,
+            onTap: () => _showPrivacyPolicy(loc),
           ),
           _buildSimpleDivider(),
 
           // Help
           _buildSimpleListTile(
             icon: Icons.help_outline,
-            title: 'Trợ giúp',
-            onTap: () => _showHelp(),
+            title: loc.help,
+            onTap: () => _showHelp(loc),
           ),
           _buildSimpleDivider(),
 
           // Invite a friend
           _buildSimpleListTile(
             icon: Icons.person_add_outlined,
-            title: 'Mời bạn bè',
+            title: loc.inviteFriends,
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Tính năng mời bạn bè sắp ra mắt'),
+                SnackBar(
+                  content: Text(loc.inviteComingSoon),
                   backgroundColor: Colors.orange,
                 ),
               );
@@ -171,8 +202,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // Logout
           _buildSimpleListTile(
             icon: Icons.logout,
-            title: 'Đăng xuất',
-            onTap: () => _showLogoutDialog(),
+            title: loc.logout,
+            onTap: () => _showLogoutDialog(loc),
           ),
         ],
       ),
@@ -189,20 +220,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       leading: Icon(
         icon,
-        color: Colors.black87,
+        color: Theme.of(context).iconTheme.color,
         size: 24,
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          color: Colors.black87,
+        style: TextStyle(
+          color: Theme.of(context).textTheme.bodyLarge?.color,
           fontSize: 16,
           fontWeight: FontWeight.w400,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right,
-        color: Colors.black54,
+        color: Theme.of(context).textTheme.bodySmall?.color,
         size: 20,
       ),
       onTap: onTap,
@@ -220,13 +251,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       leading: Icon(
         icon,
-        color: Colors.black87,
+        color: Theme.of(context).iconTheme.color,
         size: 24,
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          color: Colors.black87,
+        style: TextStyle(
+          color: Theme.of(context).textTheme.bodyLarge?.color,
           fontSize: 16,
           fontWeight: FontWeight.w400,
         ),
@@ -234,8 +265,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeTrackColor: Colors.black54,
-        activeThumbColor: Colors.black87,
+        activeTrackColor: Colors.green.shade300,
+        activeThumbColor: Colors.green,
       ),
     );
   }
@@ -243,7 +274,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Simple divider
   Widget _buildSimpleDivider() {
     return Divider(
-      color: Colors.grey[300],
+      color: Theme.of(context).brightness == Brightness.dark
+          ? Colors.white.withValues(alpha: 0.1)
+          : Colors.grey[300],
       height: 1,
       indent: 64,
       endIndent: 0,
@@ -251,99 +284,141 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // Dialog methods
-  void _showLanguageDialog() {
+  void _showLanguageDialog(AppLocalizations loc) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF2A2740)
+            : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Chọn ngôn ngữ',
-          style: TextStyle(color: Colors.black87),
+        title: Text(
+          loc.selectLanguage,
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildDialogOption('Tiếng Việt', _selectedLanguage == 'Tiếng Việt'),
-            _buildDialogOption('English', _selectedLanguage == 'English'),
+            _buildDialogOption(
+              dialogContext,
+              loc.vietnamese,
+              _selectedLanguage == 'Tiếng Việt',
+              'vi',
+            ),
+            _buildDialogOption(
+              dialogContext,
+              loc.english,
+              _selectedLanguage == 'English',
+              'en',
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDialogOption(String title, bool isSelected) {
+  Widget _buildDialogOption(
+    BuildContext dialogContext,
+    String title,
+    bool isSelected,
+    String languageCode,
+  ) {
     return ListTile(
       title: Text(
         title,
-        style: const TextStyle(color: Colors.black87),
+        style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
       ),
       trailing: isSelected
-          ? const Icon(Icons.check, color: Colors.black87)
+          ? Icon(Icons.check, color: Theme.of(context).iconTheme.color)
           : null,
-      onTap: () {
+      onTap: () async {
+        Navigator.pop(dialogContext);
+
+        // Change language via LocalizationProvider
+        final localizationProvider = LocalizationProvider.of(context);
+        if (localizationProvider != null) {
+          await localizationProvider.changeLanguage(languageCode);
+        }
+
+        // Update selected language display
         setState(() {
-          _selectedLanguage = title;
+          _selectedLanguage = languageCode == 'vi' ? 'Tiếng Việt' : 'English';
         });
-        Navigator.pop(context);
+
+        if (mounted) {
+          // Show confirmation
+          final newLoc = AppLocalizations(languageCode);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ ${newLoc.language}: $title'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       },
     );
   }
 
-  void _showSecuritySettings() {
+  void _showSecuritySettings(AppLocalizations loc) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Cài đặt bảo mật sắp ra mắt'),
+      SnackBar(
+        content: Text(loc.securityComingSoon),
         backgroundColor: Colors.orange,
       ),
     );
   }
 
-  void _showTermsOfService() {
+  void _showTermsOfService(AppLocalizations loc) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang mở Điều khoản & Điều kiện...'),
+      SnackBar(
+        content: Text(loc.termsOpening),
         backgroundColor: Colors.orange,
       ),
     );
   }
 
-  void _showPrivacyPolicy() {
+  void _showPrivacyPolicy(AppLocalizations loc) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang mở Chính sách bảo mật...'),
+      SnackBar(
+        content: Text(loc.privacyOpening),
         backgroundColor: Colors.orange,
       ),
     );
   }
 
-  void _showHelp() {
+  void _showHelp(AppLocalizations loc) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đang mở Trợ giúp...'),
+      SnackBar(
+        content: Text(loc.helpOpening),
         backgroundColor: Colors.orange,
       ),
     );
   }
 
-  Future<void> _showLogoutDialog() async {
+  Future<void> _showLogoutDialog(AppLocalizations loc) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF2A2740)
+            : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Đăng xuất',
-          style: TextStyle(color: Colors.black87),
+        title: Text(
+          loc.logout,
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
         ),
-        content: const Text(
-          'Bạn có chắc chắn muốn đăng xuất?',
-          style: TextStyle(color: Colors.black54),
+        content: Text(
+          loc.logoutConfirm,
+          style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              loc.cancel,
+              style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -351,7 +426,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Đăng xuất'),
+            child: Text(loc.logout),
           ),
         ],
       ),
@@ -370,7 +445,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Lỗi: $e'),
+              content: Text('${loc.error}: $e'),
               backgroundColor: Colors.red,
             ),
           );

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/article_model.dart';
 import '../services/firestore_service.dart';
 import '../widgets/article_card_horizontal.dart';
+import '../utils/app_localizations.dart';
+import '../widgets/localization_provider.dart';
 
 class ReadingHistoryScreen extends StatefulWidget {
   const ReadingHistoryScreen({super.key});
@@ -15,10 +17,32 @@ class _ReadingHistoryScreenState extends State<ReadingHistoryScreen> {
   List<ArticleModel> _readingHistory = [];
   bool _isLoading = true;
 
+  // Track language to reload on change
+  String? _previousLanguage;
+
   @override
   void initState() {
     super.initState();
     _loadReadingHistory();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Check for language change
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+
+    if (_previousLanguage != null && _previousLanguage != currentLanguage) {
+      // Language changed, just update UI
+      _previousLanguage = currentLanguage;
+      if (mounted) {
+        setState(() {});
+      }
+    } else if (_previousLanguage == null) {
+      _previousLanguage = currentLanguage;
+    }
   }
 
   Future<void> _loadReadingHistory() async {
@@ -41,22 +65,35 @@ class _ReadingHistoryScreenState extends State<ReadingHistoryScreen> {
   }
 
   Future<void> _clearHistory() async {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xóa lịch sử'),
-        content: const Text('Bạn có chắc chắn muốn xóa toàn bộ lịch sử đọc?'),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF2A2740)
+            : Colors.white,
+        title: Text(
+          loc.translate('clear_history_dialog_title'),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+        ),
+        content: Text(
+          loc.translate('clear_history_dialog_content'),
+          style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: Text(loc.translate('cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              'Xóa',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              loc.translate('delete'),
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
@@ -78,8 +115,8 @@ class _ReadingHistoryScreenState extends State<ReadingHistoryScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Đã xóa lịch sử đọc'),
+            SnackBar(
+              content: Text(loc.translate('history_cleared')),
               backgroundColor: Colors.green,
             ),
           );
@@ -91,8 +128,8 @@ class _ReadingHistoryScreenState extends State<ReadingHistoryScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Không thể xóa lịch sử đọc'),
+            SnackBar(
+              content: Text(loc.translate('cannot_clear_history')),
               backgroundColor: Colors.red,
             ),
           );
@@ -103,41 +140,45 @@ class _ReadingHistoryScreenState extends State<ReadingHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final loc = AppLocalizations(currentLanguage);
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Đã đọc gần đây',
+        title: Text(
+          loc.translate('reading_history_title'),
           style: TextStyle(
-            color: Colors.black87,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
             fontWeight: FontWeight.bold,
           ),
         ),
         actions: [
           if (_readingHistory.isNotEmpty)
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.black87),
+              icon: Icon(Icons.more_vert, color: Theme.of(context).iconTheme.color),
               onSelected: (value) {
                 if (value == 'clear') {
                   _clearHistory();
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'clear',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline, color: Colors.red),
-                      SizedBox(width: 8),
+                      const Icon(Icons.delete_outline, color: Colors.red),
+                      const SizedBox(width: 8),
                       Text(
-                        'Xóa lịch sử',
-                        style: TextStyle(color: Colors.red),
+                        loc.translate('clear_history'),
+                        style: const TextStyle(color: Colors.red),
                       ),
                     ],
                   ),
@@ -164,19 +205,19 @@ class _ReadingHistoryScreenState extends State<ReadingHistoryScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Chưa có lịch sử đọc',
+                        loc.translate('no_reading_history'),
                         style: TextStyle(
                           fontSize: 18,
-                          color: Colors.grey[600],
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Các bài báo bạn đọc sẽ xuất hiện ở đây',
+                        loc.translate('reading_history_subtitle'),
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey[500],
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                       ),
                     ],
