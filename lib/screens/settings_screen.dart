@@ -6,6 +6,10 @@ import '../utils/app_localizations.dart';
 import '../widgets/localization_provider.dart';
 import '../providers/theme_provider.dart';
 import 'login_screen.dart';
+import 'profile_screen.dart';
+import 'terms_screen.dart';
+import 'privacy_screen.dart';
+import 'help_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -102,7 +106,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.person_outline,
             title: loc.account,
             onTap: () {
-              // Navigate to account details
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
             },
           ),
           _buildSimpleDivider(),
@@ -152,13 +161,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _buildSimpleDivider(),
 
-          // Security
-          _buildSimpleListTile(
-            icon: Icons.security_outlined,
-            title: loc.security,
-            onTap: () => _showSecuritySettings(loc),
-          ),
-          _buildSimpleDivider(),
 
           // Terms & Conditions
           _buildSimpleListTile(
@@ -181,21 +183,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             icon: Icons.help_outline,
             title: loc.help,
             onTap: () => _showHelp(loc),
-          ),
-          _buildSimpleDivider(),
-
-          // Invite a friend
-          _buildSimpleListTile(
-            icon: Icons.person_add_outlined,
-            title: loc.inviteFriends,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(loc.inviteComingSoon),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-            },
           ),
           _buildSimpleDivider(),
 
@@ -360,38 +347,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showSecuritySettings(AppLocalizations loc) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(loc.securityComingSoon),
-        backgroundColor: Colors.orange,
-      ),
-    );
-  }
 
   void _showTermsOfService(AppLocalizations loc) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(loc.termsOpening),
-        backgroundColor: Colors.orange,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TermsScreen(),
       ),
     );
   }
 
   void _showPrivacyPolicy(AppLocalizations loc) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(loc.privacyOpening),
-        backgroundColor: Colors.orange,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const PrivacyScreen(),
       ),
     );
   }
 
   void _showHelp(AppLocalizations loc) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(loc.helpOpening),
-        backgroundColor: Colors.orange,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const HelpScreen(),
       ),
     );
   }

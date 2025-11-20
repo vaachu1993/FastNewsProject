@@ -46,6 +46,16 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Facebook App ID -->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="@string/facebook_app_id"/>
+
+        <!-- Facebook Client Token -->
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="@string/facebook_client_token"/>
+
         <!-- Notification receiver for boot completed -->
         <receiver android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
             android:exported="false">

@@ -17,6 +17,48 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _authService = AuthService();
   bool _isGoogleLoading = false;
+  bool _isFacebookLoading = false;
+
+  // Handle Facebook Sign In
+  Future<void> _handleFacebookSignIn() async {
+    setState(() => _isFacebookLoading = true);
+
+    try {
+      String? result = await _authService.signInWithFacebook();
+
+      if (!mounted) return;
+
+      if (result == null) {
+        // Facebook login thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đăng nhập Facebook thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        await _checkAndNavigate();
+      } else {
+        // Hiển thị lỗi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result),
+            backgroundColor: result.contains('❌') ? Colors.orange : Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isFacebookLoading = false);
+      }
+    }
+  }
 
   // Handle Google Sign In
   Future<void> _handleGoogleSignIn() async {
@@ -154,20 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 50),
 
                 // Facebook Button
-                _buildSocialButton(
-                  context,
-                  icon: Icons.facebook,
-                  iconColor: const Color(0xFF1877F2),
-                  text: 'Tiếp tục với Facebook',
-                  onTap: () {
-                    // Facebook login logic
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Đăng nhập Facebook sắp ra mắt'),
-                      ),
-                    );
-                  },
-                ),
+                _buildFacebookButton(context),
 
                 const SizedBox(height: 16),
 
@@ -325,18 +354,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconColor,
-    required String text,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildFacebookButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: OutlinedButton(
-        onPressed: onTap,
+        onPressed: _isFacebookLoading ? null : _handleFacebookSignIn,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
           shape: RoundedRectangleBorder(
@@ -345,25 +368,34 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Icon positioned on the left
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-            // Centered text
-            Text(
-              text,
-              style: const TextStyle(
-                color: Color(0xFF2C2C2C),
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+        child: _isFacebookLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1877F2)),
+                ),
+              )
+            : Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Icon positioned on the left
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
+                  ),
+                  // Centered text
+                  const Text(
+                    'Tiếp tục với Facebook',
+                    style: TextStyle(
+                      color: Color(0xFF2C2C2C),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

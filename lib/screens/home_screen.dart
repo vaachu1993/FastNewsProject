@@ -9,7 +9,9 @@ import '../utils/app_localizations.dart';
 import '../widgets/localization_provider.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onNavigateToProfile;
+
+  const HomeScreen({super.key, this.onNavigateToProfile});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -177,16 +179,29 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         title: Row(
           children: [
-            Image.network(
-              'https://img.icons8.com/color/48/news.png',
-              width: 28,
-              height: 28,
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4CAF50), Color(0xFF8BC34A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.newspaper,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
               'FastNews',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
                 color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
@@ -195,24 +210,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         actions: [
           Icon(Icons.notifications_outlined, color: Theme.of(context).iconTheme.color),
           const SizedBox(width: 10),
-          CircleAvatar(
-            radius: 15,
-            backgroundColor: const Color(0xFF5A7D3C),
-            backgroundImage: (_userData?['photoURL'] != null && _userData!['photoURL'].toString().isNotEmpty) ||
-                    (_currentUser?.photoURL != null && _currentUser!.photoURL!.isNotEmpty)
-                ? NetworkImage(_userData?['photoURL'] ?? _currentUser?.photoURL ?? '')
-                : null,
-            child: (_userData?['photoURL'] == null || _userData!['photoURL'].toString().isEmpty) &&
-                    (_currentUser?.photoURL == null || _currentUser!.photoURL!.isEmpty)
-                ? Text(
-                    (_userData?['displayName'] ?? _currentUser?.displayName ?? _userData?['email'] ?? _currentUser?.email ?? 'U')[0].toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  )
-                : null,
+          GestureDetector(
+            onTap: () {
+              // Navigate to profile screen using callback
+              widget.onNavigateToProfile?.call();
+            },
+            child: CircleAvatar(
+              radius: 15,
+              backgroundColor: const Color(0xFF5A7D3C),
+              backgroundImage: (_userData?['photoURL'] != null && _userData!['photoURL'].toString().isNotEmpty) ||
+                      (_currentUser?.photoURL != null && _currentUser!.photoURL!.isNotEmpty)
+                  ? NetworkImage(_userData?['photoURL'] ?? _currentUser?.photoURL ?? '')
+                  : null,
+              child: (_userData?['photoURL'] == null || _userData!['photoURL'].toString().isEmpty) &&
+                      (_currentUser?.photoURL == null || _currentUser!.photoURL!.isEmpty)
+                  ? Text(
+                      (_userData?['displayName'] ?? _currentUser?.displayName ?? _userData?['email'] ?? _currentUser?.email ?? 'U')[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    )
+                  : null,
+            ),
           ),
           const SizedBox(width: 12),
         ],

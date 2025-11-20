@@ -55,7 +55,12 @@ class _MainScreenState extends State<MainScreen> {
 
     // Create pages with keys based on language to force rebuild when language changes
     final pages = [
-      HomeScreen(key: ValueKey('home_$currentLanguage')),
+      HomeScreen(
+        key: ValueKey('home_$currentLanguage'),
+        onNavigateToProfile: () {
+          setState(() => mucHienTai = 3);
+        },
+      ),
       DiscoverScreen(key: ValueKey('discover_$currentLanguage')),
       BookmarkScreen(key: ValueKey('bookmark_$currentLanguage')),
       ProfileScreen(key: ValueKey('profile_$currentLanguage')),

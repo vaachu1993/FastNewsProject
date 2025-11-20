@@ -8,6 +8,8 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
 import '../utils/date_formatter.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final ArticleModel article;
@@ -504,13 +506,16 @@ Chia sẻ từ FastNews 📱
 
   /// Chia sẻ bài viết với tùy chọn nâng cao
   Future<void> _showShareOptions() async {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isDarkMode = themeProvider.isDarkMode;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF2A2740) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Column(
@@ -522,20 +527,20 @@ Chia sẻ từ FastNews 📱
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
 
               // Title
-              const Padding(
-                padding: EdgeInsets.all(16),
+              Padding(
+                padding: const EdgeInsets.all(16),
                 child: Text(
                   'Chia sẻ bài viết',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
               ),
@@ -550,13 +555,19 @@ Chia sẻ từ FastNews 📱
                   ),
                   child: const Icon(Icons.share, color: Colors.blue),
                 ),
-                title: const Text(
+                title: Text(
                   'Chia sẻ văn bản',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Chia sẻ tiêu đề và link bài viết',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -573,13 +584,19 @@ Chia sẻ từ FastNews 📱
                   ),
                   child: const Icon(Icons.link, color: Colors.green),
                 ),
-                title: const Text(
+                title: Text(
                   'Chỉ chia sẻ link',
-                  style: TextStyle(fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Chia sẻ đường dẫn bài viết gốc',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -810,6 +827,10 @@ Chia sẻ từ FastNews 📱
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    final theme = Theme.of(context);
+
     // Sử dụng nội dung đã fetch được hoặc fallback về description
     String displayContent = '';
 
@@ -829,26 +850,26 @@ Chia sẻ từ FastNews 📱
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: theme.appBarTheme.foregroundColor),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'FastNews',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black87,
+            color: theme.appBarTheme.foregroundColor,
           ),
         ),
         actions: [
           IconButton(
             icon: Icon(
               isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              color: isBookmarked ? const Color(0xFF5A7D3C) : Colors.black87,
+              color: isBookmarked ? const Color(0xFF5A7D3C) : theme.appBarTheme.foregroundColor,
             ),
             onPressed: isCheckingBookmark ? null : _toggleBookmark,
             tooltip: isBookmarked ? 'Bỏ lưu' : 'Lưu bài viết',
@@ -863,11 +884,11 @@ Chia sẻ từ FastNews 📱
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade600),
                     ),
                   )
-                : const Icon(Icons.refresh, color: Colors.black87),
+                : Icon(Icons.refresh, color: theme.appBarTheme.foregroundColor),
             onPressed: isLoadingContent ? null : () => _fetchFullContent(isRefresh: true),
           ),
           IconButton(
-            icon: const Icon(Icons.share_outlined, color: Colors.black87),
+            icon: Icon(Icons.share_outlined, color: theme.appBarTheme.foregroundColor),
             onPressed: _showShareOptions,
             tooltip: 'Chia sẻ bài viết',
           ),
@@ -876,7 +897,7 @@ Chia sẻ từ FastNews 📱
       body: RefreshIndicator(
         onRefresh: () => _fetchFullContent(isRefresh: true),
         color: Colors.green,
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         strokeWidth: 2.5,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -899,8 +920,8 @@ Chia sẻ từ FastNews 📱
                         return Container(
                           width: double.infinity,
                           height: 250,
-                          color: Colors.grey.shade200,
-                          child: const Icon(Icons.image, size: 80, color: Colors.grey),
+                          color: isDarkMode ? const Color(0xFF2A2740) : Colors.grey.shade200,
+                          child: Icon(Icons.image, size: 80, color: isDarkMode ? Colors.grey.shade600 : Colors.grey),
                         );
                       },
                     ),
@@ -917,11 +938,11 @@ Chia sẻ từ FastNews 📱
                           opacity: 1.0,
                           child: Text(
                             widget.article.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               height: 1.3,
-                              color: Colors.black87,
+                              color: isDarkMode ? Colors.white : Colors.black87,
                             ),
                           ),
                         ),
@@ -949,16 +970,16 @@ Chia sẻ từ FastNews 📱
                         // Thông tin ngày đăng
                         Row(
                           children: [
-                            const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                            Icon(Icons.calendar_today, size: 14, color: isDarkMode ? Colors.grey.shade400 : Colors.grey),
                             const SizedBox(width: 4),
-                            const Text(
+                            Text(
                               'Ngày đăng:',
-                              style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
+                              style: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey, fontSize: 13, fontWeight: FontWeight.w500),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               DateFormatter.formatDateTime(widget.article.time),
-                              style: const TextStyle(color: Colors.grey, fontSize: 13),
+                              style: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey, fontSize: 13),
                             ),
                           ],
                         ),
@@ -985,7 +1006,7 @@ Chia sẻ từ FastNews 📱
                                       Text(
                                         'Đang tải nội dung đầy đủ...',
                                         style: TextStyle(
-                                          color: Colors.grey.shade600,
+                                          color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -1016,9 +1037,9 @@ Chia sẻ từ FastNews 📱
                             child: Text(
                               displayContent,
                               textAlign: TextAlign.justify,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.black87,
+                                color: isDarkMode ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
                                 height: 1.7,
                                 letterSpacing: 0.3,
                                 wordSpacing: 1.5,
