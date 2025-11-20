@@ -24,9 +24,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool isLoading = true;
   bool isLoadingMore = false;
   List<ArticleModel> latestNews = [];
-  List<ArticleModel> favoriteTopicsNews = [];
   List<String> userFavoriteTopics = [];
-  Map<String, int> topicArticleCounts = {};
   final ScrollController _categoryScrollController = ScrollController();
 
   // Add user data
@@ -41,9 +39,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _loadUserFavoriteTopics();
-    _loadNews(isInitial: true);
+    _initializeData();
 
     // Listen to auth state changes
     _authService.authStateChanges.listen((user) {
@@ -51,6 +47,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _loadUserData();
       }
     });
+  }
+
+  // Initialize data in correct order
+  Future<void> _initializeData() async {
+    setState(() => isLoading = true);
+
+    // Load user data and favorite topics FIRST
+    await _loadUserData();
+    await _loadUserFavoriteTopics();
+
+    // Then load news based on favorite topics
+    await _loadNews(isInitial: true);
   }
 
   @override
@@ -71,7 +79,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             isLoading = true;
           });
           _loadNews(isInitial: true);
-          _loadFavoriteTopicsNews();
         }
       });
     } else if (_previousLanguage == null) {
@@ -90,35 +97,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Future<void> _loadUserFavoriteTopics() async {
     try {
       final topics = await _firestoreService.getUserFavoriteTopics();
+      print('✅ Loaded user favorite topics: $topics');
       setState(() {
         userFavoriteTopics = topics;
       });
       if (topics.isNotEmpty) {
-        _loadFavoriteTopicsNews();
+        print('📰 User has favorite topics - will filter news accordingly');
+      } else {
+        print('⚠️ No favorite topics found - will show all news');
       }
     } catch (e) {
-      print('Error loading user favorite topics: $e');
-    }
-  }
-
-  Future<void> _loadFavoriteTopicsNews() async {
-    try {
-      List<ArticleModel> allNews = [];
-
-      // Load news from each favorite topic
-      for (String topic in userFavoriteTopics) {
-        final news = await RssService.fetchNewsByCategory(topic);
-        allNews.addAll(news.take(3)); // Take 3 articles from each topic
-      }
-
-      // Shuffle to mix different topics
-      allNews.shuffle();
-
-      setState(() {
-        favoriteTopicsNews = allNews.take(10).toList();
-      });
-    } catch (e) {
-      print('Error loading favorite topics news: $e');
+      print('❌ Error loading user favorite topics: $e');
     }
   }
 
@@ -145,9 +134,43 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     final category = categories[selectedCategory];
 
-    final news = (category == 'Tất cả')
-        ? await RssService.fetchRandomNews()
-        : await RssService.fetchNewsByCategory(category);
+    List<ArticleModel> news;
+
+    // If user has no favorite topics, show all news
+    if (userFavoriteTopics.isEmpty) {
+      print('📋 No favorite topics - loading all news for category: $category');
+      news = (category == 'Tất cả')
+          ? await RssService.fetchRandomNews()
+          : await RssService.fetchNewsByCategory(category);
+    } else {
+      print('💖 User has favorite topics: $userFavoriteTopics');
+      // Filter news based on favorite topics - ONLY show articles from favorite topics
+      if (category == 'Tất cả') {
+        print('📰 Loading news from ALL favorite topics');
+        // Load news from all favorite topics only
+        List<ArticleModel> allNews = [];
+        for (String topic in userFavoriteTopics) {
+          print('  - Fetching news for: $topic');
+          final topicNews = await RssService.fetchNewsByCategory(topic);
+          print('  - Got ${topicNews.length} articles for $topic');
+          allNews.addAll(topicNews);
+        }
+        // Shuffle to mix different topics
+        allNews.shuffle();
+        news = allNews;
+        print('✅ Total articles from favorite topics: ${news.length}');
+      } else {
+        // Only load news if the selected category is in favorite topics
+        if (userFavoriteTopics.contains(category)) {
+          print('✅ Category "$category" is in favorites - loading news');
+          news = await RssService.fetchNewsByCategory(category);
+        } else {
+          print('⚠️ Category "$category" is NOT in favorites - showing empty list');
+          // If selected category is not in favorites, show empty list
+          news = [];
+        }
+      }
+    }
 
     setState(() {
       latestNews = news;
@@ -275,163 +298,82 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         // Danh mục
                         SizedBox(
                           height: 40,
-                          child: ListView.builder(
-                            controller: _categoryScrollController,
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: categories.length,
-                            itemBuilder: (context, index) {
-                              final bool isSelected = selectedCategory == index;
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() => selectedCategory = index);
-                                  _loadNews();
-                                  // Scroll mượt đến category được chọn
-                                  _categoryScrollController.animateTo(
-                                    index * 100.0,
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeInOut,
+                          child: Builder(
+                            builder: (context) {
+                              // Get filtered categories based on user's favorite topics
+                              List<String> displayCategories;
+                              if (userFavoriteTopics.isEmpty) {
+                                displayCategories = categories;
+                              } else {
+                                displayCategories = ['Tất cả', ...userFavoriteTopics];
+                              }
+
+                              return ListView.builder(
+                                controller: _categoryScrollController,
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: displayCategories.length,
+                                itemBuilder: (context, index) {
+                                  final categoryIndex = userFavoriteTopics.isEmpty
+                                      ? index
+                                      : categories.indexOf(displayCategories[index]);
+                                  final bool isSelected = selectedCategory == categoryIndex;
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() => selectedCategory = categoryIndex);
+                                      _loadNews();
+                                      // Scroll mượt đến category được chọn
+                                      _categoryScrollController.animateTo(
+                                        index * 100.0,
+                                        duration: const Duration(milliseconds: 300),
+                                        curve: Curves.easeInOut,
+                                      );
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 250),
+                                      curve: Curves.easeInOut,
+                                      margin: const EdgeInsets.only(right: 10, bottom: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Colors.green
+                                            : Theme.of(context).brightness == Brightness.dark
+                                                ? const Color(0xFF2A2740)
+                                                : Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.green.withValues(alpha: 0.3),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ]
+                                            : [],
+                                      ),
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: const Duration(milliseconds: 250),
+                                        curve: Curves.easeInOut,
+                                        style: TextStyle(
+                                          color: isSelected
+                                              ? Colors.white
+                                              : Theme.of(context).textTheme.bodyLarge?.color,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                        child: Text(_translateCategory(displayCategories[index], currentLanguage)),
+                                      ),
+                                    ),
                                   );
                                 },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 250),
-                                  curve: Curves.easeInOut,
-                                  margin: const EdgeInsets.only(right: 10, bottom: 4),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? Colors.green
-                                        : Theme.of(context).brightness == Brightness.dark
-                                            ? const Color(0xFF2A2740)
-                                            : Colors.grey.shade200,
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.green.withValues(alpha: 0.3),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ]
-                                        : [],
-                                  ),
-                                  child: AnimatedDefaultTextStyle(
-                                    duration: const Duration(milliseconds: 250),
-                                    curve: Curves.easeInOut,
-                                    style: TextStyle(
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Theme.of(context).textTheme.bodyLarge?.color,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                    child: Text(_translateCategory(categories[index], currentLanguage)),
-                                  ),
-                                ),
                               );
                             },
                           ),
                         ),
                         const SizedBox(height: 14),
 
-                        // Favorite Topics Section (if user has selected topics)
-                        if (userFavoriteTopics.isNotEmpty) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.favorite,
-                                    color: Colors.red,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    loc.favoriteTopics,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              IconButton(
-                                onPressed: _loadFavoriteTopicsNews,
-                                icon: const Icon(
-                                  Icons.refresh,
-                                  color: Colors.green,
-                                  size: 22,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Display selected topics as chips
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: userFavoriteTopics.map((topic) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.green.withValues(alpha: 0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _getTopicIcon(topic),
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _translateCategory(topic, currentLanguage),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Favorite topics news list
-                          if (favoriteTopicsNews.isNotEmpty)
-                            SizedBox(
-                              height: 320,
-                              child: ListView.builder(
-                                physics: const BouncingScrollPhysics(),
-                                scrollDirection: Axis.horizontal,
-                                itemCount: favoriteTopicsNews.length.clamp(0, 10),
-                                itemBuilder: (context, index) {
-                                  return Container(
-                                    width: 300,
-                                    margin: const EdgeInsets.only(right: 14),
-                                    child: ArticleCardHorizontal(
-                                      article: favoriteTopicsNews[index],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          const SizedBox(height: 24),
-                        ],
 
 
                         // Danh sách tin nổi bật (trượt ngang) với AnimatedSwitcher
@@ -451,37 +393,82 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               ),
                             );
                           },
-                          child: SizedBox(
-                            key: ValueKey<int>(selectedCategory),
-                            height: 320,
-                            child: ListView.builder(
-                              physics: const BouncingScrollPhysics(),
-                              scrollDirection: Axis.horizontal,
-                              itemCount: latestNews.length.clamp(0, 5),
-                              itemBuilder: (context, index) {
-                                return TweenAnimationBuilder<double>(
-                                  tween: Tween(begin: 0.0, end: 1.0),
-                                  duration: Duration(milliseconds: 300 + (index * 50)),
-                                  curve: Curves.easeOut,
-                                  builder: (context, value, child) {
-                                    return Opacity(
-                                      opacity: value,
-                                      child: Transform.translate(
-                                        offset: Offset(20 * (1 - value), 0),
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: Container(
-                                    width: 300,
-                                    margin: const EdgeInsets.only(right: 14),
-                                    child: ArticleCardHorizontal(
-                                        article: latestNews[index]),
+                          child: latestNews.isEmpty
+                              ? Container(
+                                  key: const ValueKey<String>('empty'),
+                                  height: 320,
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? const Color(0xFF2A2740)
+                                        : Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                      width: 1,
+                                    ),
                                   ),
-                                );
-                              },
-                            ),
-                          ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.article_outlined,
+                                        size: 64,
+                                        color: Colors.grey.shade400,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        loc.translate('no_articles_in_category'),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        loc.translate('select_favorite_topics_hint'),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey.shade500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : SizedBox(
+                                  key: ValueKey<int>(selectedCategory),
+                                  height: 320,
+                                  child: ListView.builder(
+                                    physics: const BouncingScrollPhysics(),
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: latestNews.length.clamp(0, 5),
+                                    itemBuilder: (context, index) {
+                                      return TweenAnimationBuilder<double>(
+                                        tween: Tween(begin: 0.0, end: 1.0),
+                                        duration: Duration(milliseconds: 300 + (index * 50)),
+                                        curve: Curves.easeOut,
+                                        builder: (context, value, child) {
+                                          return Opacity(
+                                            opacity: value,
+                                            child: Transform.translate(
+                                              offset: Offset(20 * (1 - value), 0),
+                                              child: child,
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          width: 300,
+                                          margin: const EdgeInsets.only(right: 14),
+                                          child: ArticleCardHorizontal(
+                                              article: latestNews[index]),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
                         ),
                         const SizedBox(height: 24),
 
@@ -570,10 +557,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+
   String _getTopicIcon(String topic) {
     switch (topic) {
       case 'Chính trị':
-        return '🏛';
+        return '🏛️';
       case 'Công nghệ':
         return '💻';
       case 'Kinh doanh':
@@ -581,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       case 'Thể thao':
         return '⚽';
       case 'Sức khỏe':
-        return '❤';
+        return '❤️';
       case 'Đời sống':
         return '🎭';
       default:

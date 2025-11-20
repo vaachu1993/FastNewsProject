@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home_screen.dart';
 import 'discover_screen.dart';
 import 'bookmark_screen.dart';
@@ -7,6 +8,7 @@ import 'profile_screen.dart';
 import 'reading_history_screen.dart';
 import 'settings_screen.dart';
 import '../services/auth_service.dart';
+import '../services/rss_service.dart';
 import '../utils/app_localizations.dart';
 import '../widgets/localization_provider.dart';
 
@@ -26,15 +28,20 @@ class _MainScreenState extends State<MainScreen> {
   User? _currentUser;
   Map<String, dynamic>? _userData;
 
+  // Track selected topics (categories)
+  List<String> _selectedTopics = [];
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadSelectedTopics();
 
     // Listen to auth state changes
     _authService.authStateChanges.listen((user) {
       if (mounted) {
         _loadUserData();
+        _loadSelectedTopics();
       }
     });
   }
@@ -44,6 +51,71 @@ class _MainScreenState extends State<MainScreen> {
     if (_currentUser != null) {
       _userData = await _authService.getUserData(_currentUser!.uid);
       setState(() {});
+    }
+  }
+
+  Future<void> _loadSelectedTopics() async {
+    try {
+      if (_currentUser != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(_currentUser!.uid)
+            .get();
+
+        if (doc.exists) {
+          final data = doc.data();
+          List<dynamic>? topics;
+
+          // Check selectedTopics first, then fallback to favoriteTopics
+          if (data?['selectedTopics'] != null) {
+            topics = data?['selectedTopics'] as List<dynamic>?;
+          } else if (data?['favoriteTopics'] != null) {
+            topics = data?['favoriteTopics'] as List<dynamic>?;
+          }
+
+          if (topics != null) {
+            setState(() {
+              _selectedTopics = topics!.map((e) => e.toString()).toList();
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading selected topics: $e');
+    }
+  }
+
+  Future<void> _toggleTopic(String category) async {
+    if (category == 'Tất cả') return; // Don't allow toggling "All"
+
+    setState(() {
+      if (_selectedTopics.contains(category)) {
+        _selectedTopics.remove(category);
+      } else {
+        _selectedTopics.add(category);
+      }
+    });
+
+    // Save to Firestore
+    await _saveSelectedTopics();
+  }
+
+  Future<void> _saveSelectedTopics() async {
+    try {
+      if (_currentUser != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(_currentUser!.uid)
+            .set({
+          'selectedTopics': _selectedTopics,
+          'favoriteTopics': _selectedTopics,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        print('✅ Saved selected topics: $_selectedTopics');
+      }
+    } catch (e) {
+      print('❌ Error saving selected topics: $e');
     }
   }
 
@@ -178,66 +250,58 @@ class _MainScreenState extends State<MainScreen> {
                   // Categories section
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Text(
-                      loc.translate('categories'),
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  _buildMenuItem(
-                    icon: Icons.menu,
-                    title: loc.translate('all'),
-                    trailing: Text(
-                      '463',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      setState(() => mucHienTai = 0);
-                    },
-                  ),
-                  _buildMenuItem(
-                    icon: Icons.chevron_right,
-                    title: loc.translate('technology'),
-                    trailing: Text(
-                      '453',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      setState(() => mucHienTai = 0);
-                    },
-                  ),
-
-                  // Add Content button
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.grey[400],
-                        side: BorderSide(color: Colors.grey[700]!),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    child: Row(
+                      children: [
+                        Text(
+                          loc.translate('categories'),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(loc.translate('add_content')),
-                      ),
+                        const SizedBox(width: 8),
+                        if (_selectedTopics.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${_selectedTopics.length}',
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
+                  // Generate category menu items dynamically with checkboxes
+                  ...RssService.getCategories().map((category) {
+                    final localizationProvider = LocalizationProvider.of(context);
+                    final lang = localizationProvider?.currentLanguage ?? 'vi';
+                    final translatedCategory = _translateCategory(category, lang);
+                    final icon = _getCategoryIcon(category);
+                    final isSelected = _selectedTopics.contains(category);
+                    final isAllCategory = category == 'Tất cả';
+
+                    return _buildCategoryMenuItem(
+                      icon: icon,
+                      title: translatedCategory,
+                      isSelected: isSelected,
+                      isAllCategory: isAllCategory,
+                      onTap: () async {
+                        if (!isAllCategory) {
+                          await _toggleTopic(category);
+                        }
+                      },
+                    );
+                  }),
+
 
                   const Divider(color: Color(0xFF2C2C2E), height: 32),
 
@@ -303,5 +367,89 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  Widget _buildCategoryMenuItem({
+    required IconData icon,
+    required String title,
+    required bool isSelected,
+    required bool isAllCategory,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isSelected ? Colors.green : Colors.grey[400],
+        size: 22,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isSelected ? Colors.green : Colors.white,
+          fontSize: 15,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+      trailing: isAllCategory
+          ? null
+          : Checkbox(
+              value: isSelected,
+              onChanged: (value) => onTap(),
+              activeColor: Colors.green,
+              checkColor: Colors.white,
+              side: BorderSide(color: Colors.grey[600]!),
+            ),
+      onTap: onTap,
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
 
+  // Translate category based on current language
+  String _translateCategory(String category, String currentLanguage) {
+    if (currentLanguage == 'en') {
+      switch (category) {
+        case 'Tất cả':
+          return 'All';
+        case 'Chính trị':
+          return 'Politics';
+        case 'Kinh doanh':
+          return 'Business';
+        case 'Công nghệ':
+          return 'Technology';
+        case 'Thể thao':
+          return 'Sports';
+        case 'Sức khỏe':
+          return 'Health';
+        case 'Đời sống':
+          return 'Lifestyle';
+        default:
+          return category;
+      }
+    }
+    return category;
+  }
+
+  // Get icon for each category
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Tất cả':
+        return Icons.apps;
+      case 'Chính trị':
+        return Icons.gavel;
+      case 'Kinh doanh':
+        return Icons.business;
+      case 'Công nghệ':
+        return Icons.computer;
+      case 'Thể thao':
+        return Icons.sports_soccer;
+      case 'Sức khỏe':
+        return Icons.health_and_safety;
+      case 'Đời sống':
+        return Icons.home;
+      default:
+        return Icons.chevron_right;
+    }
+  }
 }

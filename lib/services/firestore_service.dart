@@ -329,13 +329,25 @@ class FirestoreService {
       }
 
       final data = doc.data() as Map<String, dynamic>?;
-      if (data == null || !data.containsKey('favoriteTopics')) {
-        print('No favorite topics found');
+      if (data == null) {
+        print('No user data found');
         return [];
       }
 
-      final topics = data['favoriteTopics'] as List<dynamic>?;
-      return topics?.map((e) => e.toString()).toList() ?? [];
+      // Check for selectedTopics first (from registration), then fallback to favoriteTopics
+      List<dynamic>? topics;
+      if (data.containsKey('selectedTopics')) {
+        topics = data['selectedTopics'] as List<dynamic>?;
+      } else if (data.containsKey('favoriteTopics')) {
+        topics = data['favoriteTopics'] as List<dynamic>?;
+      }
+
+      if (topics == null || topics.isEmpty) {
+        print('No favorite topics found in selectedTopics or favoriteTopics');
+        return [];
+      }
+
+      return topics.map((e) => e.toString()).toList();
     } catch (e) {
       print('Error getting user favorite topics: $e');
       return [];
@@ -354,7 +366,8 @@ class FirestoreService {
           .collection('users')
           .doc(currentUserId)
           .set({
-        'favoriteTopics': topics,
+        'selectedTopics': topics, // Primary field (from registration)
+        'favoriteTopics': topics, // Keep for backward compatibility
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 

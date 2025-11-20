@@ -4,7 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'main_screen.dart';
 
 class TopicsSelectionScreen extends StatefulWidget {
-  const TopicsSelectionScreen({super.key});
+  final bool isFromSettings; // True if opened from Settings, false if from registration
+
+  const TopicsSelectionScreen({super.key, this.isFromSettings = false});
 
   @override
   State<TopicsSelectionScreen> createState() => _TopicsSelectionScreenState();
@@ -52,6 +54,52 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
 
   final Set<String> _selectedTopics = {};
   bool _isLoading = false;
+  bool _isLoadingTopics = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isFromSettings) {
+      _loadExistingTopics();
+    } else {
+      setState(() => _isLoadingTopics = false);
+    }
+  }
+
+  Future<void> _loadExistingTopics() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (doc.exists) {
+          final data = doc.data();
+          if (data != null) {
+            // Check selectedTopics first, then fallback to favoriteTopics
+            List<dynamic>? topics;
+            if (data['selectedTopics'] != null) {
+              topics = data['selectedTopics'] as List<dynamic>;
+            } else if (data['favoriteTopics'] != null) {
+              topics = data['favoriteTopics'] as List<dynamic>;
+            }
+
+            if (topics != null && topics.isNotEmpty) {
+              setState(() {
+                _selectedTopics.addAll(topics!.map((e) => e.toString()).toList());
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading existing topics: $e');
+    } finally {
+      setState(() => _isLoadingTopics = false);
+    }
+  }
 
   Future<void> _saveTopicsAndContinue() async {
     if (_selectedTopics.isEmpty) {
@@ -75,7 +123,8 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
 
         // Chuẩn bị dữ liệu để lưu
         Map<String, dynamic> userData = {
-          'selectedTopics': _selectedTopics.toList(),
+          'selectedTopics': _selectedTopics.toList(), // Primary field (from registration)
+          'favoriteTopics': _selectedTopics.toList(), // For backward compatibility
           'updatedAt': FieldValue.serverTimestamp(),
         };
 

@@ -97,6 +97,7 @@ class AppLocalizations {
       'technology': 'Công nghệ',
       'add_content': 'Thêm nội dung',
       'recently_read': 'Đã đọc gần đây',
+      'your_topics': 'Chủ đề của bạn',
 
       // Reading History Screen
       'reading_history_title': 'Đã đọc gần đây',
@@ -182,6 +183,72 @@ class AppLocalizations {
       'save_success': 'Lưu thành công',
       'update_success': 'Cập nhật thành công',
       'delete_success': 'Xóa thành công',
+
+      // Empty state messages
+      'no_articles_in_category': 'Không có bài viết trong danh mục này',
+      'select_favorite_topics_hint': 'Vui lòng chọn chủ đề yêu thích trong phần Cài đặt để xem bài viết',
+
+      // Article Detail Screen
+      'article_detail': 'Chi tiết bài viết',
+      'related_articles': 'Bài viết liên quan',
+      'comments': 'Bình luận',
+      'share_article': 'Chia sẻ bài viết',
+
+      // Categories (Sidebar)
+      'category_politics': 'Chính trị',
+      'category_business': 'Kinh doanh',
+      'category_sports': 'Thể thao',
+      'category_entertainment': 'Giải trí',
+      'category_health': 'Sức khỏe',
+      'category_science': 'Khoa học',
+      'category_world': 'Thế giới',
+      'category_education': 'Giáo dục',
+      'category_culture': 'Văn hóa',
+      'category_law': 'Pháp luật',
+
+      // Terms & Conditions
+      'terms_title': 'Điều khoản & Điều kiện',
+      'terms_intro': 'Chào mừng bạn đến với FastNews',
+      'terms_content_1': '1. Chấp nhận điều khoản',
+      'terms_content_1_detail': 'Bằng cách truy cập và sử dụng ứng dụng FastNews, bạn đồng ý tuân thủ các điều khoản và điều kiện được nêu trong tài liệu này.',
+      'terms_content_2': '2. Sử dụng dịch vụ',
+      'terms_content_2_detail': 'Bạn đồng ý sử dụng dịch vụ của chúng tôi một cách hợp pháp và không vi phạm quyền của bất kỳ bên thứ ba nào.',
+      'terms_content_3': '3. Quyền sở hữu trí tuệ',
+      'terms_content_3_detail': 'Tất cả nội dung, nhãn hiệu và dữ liệu trên FastNews đều thuộc quyền sở hữu của chúng tôi hoặc các đối tác cấp phép.',
+      'terms_content_4': '4. Giới hạn trách nhiệm',
+      'terms_content_4_detail': 'FastNews không chịu trách nhiệm về bất kỳ thiệt hại trực tiếp hoặc gián tiếp nào phát sinh từ việc sử dụng dịch vụ.',
+      'terms_content_5': '5. Thay đổi điều khoản',
+      'terms_content_5_detail': 'Chúng tôi có quyền thay đổi các điều khoản này bất kỳ lúc nào. Việc tiếp tục sử dụng dịch vụ sau khi có thay đổi đồng nghĩa với việc bạn chấp nhận các điều khoản mới.',
+
+      // Privacy Policy
+      'privacy_title': 'Chính sách bảo mật',
+      'privacy_intro': 'Chính sách bảo mật của FastNews',
+      'privacy_content_1': '1. Thu thập thông tin',
+      'privacy_content_1_detail': 'Chúng tôi thu thập thông tin cá nhân như tên, email và thông tin đăng nhập để cung cấp dịch vụ tốt hơn.',
+      'privacy_content_2': '2. Sử dụng thông tin',
+      'privacy_content_2_detail': 'Thông tin của bạn được sử dụng để cải thiện trải nghiệm người dùng, gửi thông báo và cá nhân hóa nội dung.',
+      'privacy_content_3': '3. Bảo mật thông tin',
+      'privacy_content_3_detail': 'Chúng tôi cam kết bảo vệ thông tin của bạn bằng các biện pháp bảo mật tiên tiến.',
+      'privacy_content_4': '4. Chia sẻ thông tin',
+      'privacy_content_4_detail': 'Chúng tôi không chia sẻ thông tin cá nhân của bạn với bên thứ ba mà không có sự đồng ý của bạn.',
+      'privacy_content_5': '5. Quyền của bạn',
+      'privacy_content_5_detail': 'Bạn có quyền truy cập, chỉnh sửa hoặc xóa thông tin cá nhân của mình bất kỳ lúc nào.',
+
+      // Help Screen
+      'help_title': 'Trợ giúp',
+      'help_intro': 'Chúng tôi sẵn sàng hỗ trợ bạn',
+      'help_section_1': 'Câu hỏi thường gặp',
+      'help_faq_1': 'Làm thế nào để đăng ký tài khoản?',
+      'help_faq_1_answer': 'Bạn có thể đăng ký bằng email hoặc đăng nhập nhanh qua Google/Facebook.',
+      'help_faq_2': 'Làm thế nào để lưu bài viết yêu thích?',
+      'help_faq_2_answer': 'Nhấn vào biểu tượng bookmark trên bài viết để lưu vào danh sách đã lưu.',
+      'help_faq_3': 'Làm thế nào để thay đổi ngôn ngữ?',
+      'help_faq_3_answer': 'Vào Cài đặt > Ngôn ngữ để chọn ngôn ngữ mong muốn.',
+      'help_section_2': 'Liên hệ hỗ trợ',
+      'help_contact_email': 'Email: support@fastnews.com',
+      'help_contact_phone': 'Hotline: 1900-xxxx',
+      'help_section_3': 'Phiên bản ứng dụng',
+      'help_version': 'Phiên bản 1.0.0',
     },
     'en': {
       // Common
@@ -266,6 +333,7 @@ class AppLocalizations {
       'technology': 'Technology',
       'add_content': 'Add Content',
       'recently_read': 'Recently Read',
+      'your_topics': 'Your Topics',
 
       // Reading History Screen
       'reading_history_title': 'Recently Read',
@@ -359,6 +427,72 @@ class AppLocalizations {
       'save_success': 'Saved successfully',
       'update_success': 'Updated successfully',
       'delete_success': 'Deleted successfully',
+
+      // Empty state messages
+      'no_articles_in_category': 'No articles in this category',
+      'select_favorite_topics_hint': 'Please select favorite topics in Settings to view articles',
+
+      // Article Detail Screen
+      'article_detail': 'Article Detail',
+      'related_articles': 'Related Articles',
+      'comments': 'Comments',
+      'share_article': 'Share Article',
+
+      // Categories (Sidebar)
+      'category_politics': 'Politics',
+      'category_business': 'Business',
+      'category_sports': 'Sports',
+      'category_entertainment': 'Entertainment',
+      'category_health': 'Health',
+      'category_science': 'Science',
+      'category_world': 'World',
+      'category_education': 'Education',
+      'category_culture': 'Culture',
+      'category_law': 'Law',
+
+      // Terms & Conditions
+      'terms_title': 'Terms & Conditions',
+      'terms_intro': 'Welcome to FastNews',
+      'terms_content_1': '1. Acceptance of Terms',
+      'terms_content_1_detail': 'By accessing and using the FastNews app, you agree to comply with the terms and conditions outlined in this document.',
+      'terms_content_2': '2. Use of Service',
+      'terms_content_2_detail': 'You agree to use our service legally and not violate the rights of any third party.',
+      'terms_content_3': '3. Intellectual Property Rights',
+      'terms_content_3_detail': 'All content, trademarks and data on FastNews are owned by us or our licensing partners.',
+      'terms_content_4': '4. Limitation of Liability',
+      'terms_content_4_detail': 'FastNews is not responsible for any direct or indirect damages arising from the use of the service.',
+      'terms_content_5': '5. Changes to Terms',
+      'terms_content_5_detail': 'We reserve the right to change these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms.',
+
+      // Privacy Policy
+      'privacy_title': 'Privacy Policy',
+      'privacy_intro': 'FastNews Privacy Policy',
+      'privacy_content_1': '1. Information Collection',
+      'privacy_content_1_detail': 'We collect personal information such as name, email and login credentials to provide better service.',
+      'privacy_content_2': '2. Use of Information',
+      'privacy_content_2_detail': 'Your information is used to improve user experience, send notifications and personalize content.',
+      'privacy_content_3': '3. Information Security',
+      'privacy_content_3_detail': 'We are committed to protecting your information with advanced security measures.',
+      'privacy_content_4': '4. Information Sharing',
+      'privacy_content_4_detail': 'We do not share your personal information with third parties without your consent.',
+      'privacy_content_5': '5. Your Rights',
+      'privacy_content_5_detail': 'You have the right to access, edit or delete your personal information at any time.',
+
+      // Help Screen
+      'help_title': 'Help',
+      'help_intro': 'We are here to help you',
+      'help_section_1': 'Frequently Asked Questions',
+      'help_faq_1': 'How to register an account?',
+      'help_faq_1_answer': 'You can register with email or login quickly via Google/Facebook.',
+      'help_faq_2': 'How to save favorite articles?',
+      'help_faq_2_answer': 'Tap the bookmark icon on the article to save it to your saved list.',
+      'help_faq_3': 'How to change language?',
+      'help_faq_3_answer': 'Go to Settings > Language to select your preferred language.',
+      'help_section_2': 'Contact Support',
+      'help_contact_email': 'Email: support@fastnews.com',
+      'help_contact_phone': 'Hotline: 1900-xxxx',
+      'help_section_3': 'App Version',
+      'help_version': 'Version 1.0.0',
     },
   };
 
