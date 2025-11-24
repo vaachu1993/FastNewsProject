@@ -147,14 +147,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       // Filter news based on favorite topics - ONLY show articles from favorite topics
       if (category == 'Tất cả') {
         print('📰 Loading news from ALL favorite topics');
-        // Load news from all favorite topics only
+        // ⚡ LOAD SONG SONG tất cả favorite topics - NHANH HƠN NHIỀU!
+        final futures = userFavoriteTopics.map((topic) {
+          print('  - Starting fetch for: $topic');
+          return RssService.fetchNewsByCategory(topic);
+        }).toList();
+
+        final results = await Future.wait(futures);
+
         List<ArticleModel> allNews = [];
-        for (String topic in userFavoriteTopics) {
-          print('  - Fetching news for: $topic');
-          final topicNews = await RssService.fetchNewsByCategory(topic);
-          print('  - Got ${topicNews.length} articles for $topic');
-          allNews.addAll(topicNews);
+        for (var i = 0; i < results.length; i++) {
+          print('  - Got ${results[i].length} articles for ${userFavoriteTopics[i]}');
+          allNews.addAll(results[i]);
         }
+
         // Shuffle to mix different topics
         allNews.shuffle();
         news = allNews;

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
@@ -46,63 +45,20 @@ class RssService {
     {'url': 'https://thanhnien.vn/rss/doi-song.rss', 'category': 'Đời sống'},
   ];
 
+  // ⚡ CACHE để tránh load lại nhiều lần
+  static Map<String, List<ArticleModel>> _cache = {};
+  static Map<String, DateTime> _cacheTimestamp = {};
+  static const Duration _cacheDuration = Duration(minutes: 5);
+
   static Future<List<ArticleModel>> fetchLatestNews() async {
     List<ArticleModel> allArticles = [];
 
-    for (var url in rssUrls) {
-      try {
-        final response = await http.get(Uri.parse(url));
-        if (response.statusCode == 200) {
-          // 🩵 Đảm bảo UTF8
-          final utf8Body = utf8.decode(response.bodyBytes);
-          final document = XmlDocument.parse(utf8Body);
-          final items = document.findAllElements('item');
+    // ⚡ LOAD SONG SONG thay vì tuần tự
+    final futures = rssUrls.map((url) => _fetchFromUrl(url, itemsLimit: 6));
+    final results = await Future.wait(futures);
 
-          for (var item in items.take(8)) {
-            final rawTitle = item.findElements('title').first.innerText;
-            final title = HtmlUtils.decodeHtmlEntities(rawTitle);
-            final link = item.findElements('link').first.innerText;
-            final pubDate = item.findElements('pubDate').isNotEmpty
-                ? item.findElements('pubDate').first.innerText
-                : 'Không rõ thời gian';
-
-            // Lấy nội dung mô tả hoặc content:encoded
-            String description = '';
-            if (item.findElements('content:encoded').isNotEmpty) {
-              description = item.findElements('content:encoded').first.innerText;
-            } else if (item.findElements('description').isNotEmpty) {
-              description = item.findElements('description').first.innerText;
-            }
-
-            // Làm sạch HTML & quảng cáo
-            description = description
-                .replaceAll(RegExp(r'<(script|style)[^>]*>.*?</\1>', dotAll: true), '')
-                .replaceAll(RegExp(r'<img[^>]*>', caseSensitive: false), '')
-                .replaceAll(RegExp(r'<a[^>]*>', caseSensitive: false), '')
-                .replaceAll('</a>', '')
-                .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
-                .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
-                .trim();
-
-            // Decode HTML entities
-            description = HtmlUtils.decodeHtmlEntities(description);
-
-            // 🖼 Tìm ảnh minh họa (nếu có)
-            final imageUrl = _extractImageUrl(item.toXmlString());
-
-            allArticles.add(ArticleModel(
-              title: title,
-              source: _detectSource(url),
-              time: pubDate,
-              imageUrl: imageUrl,
-              link: link,
-              description: description,
-            ));
-          }
-        }
-      } catch (e) {
-        print("Lỗi khi tải RSS từ $url: $e");
-      }
+    for (var articles in results) {
+      allArticles.addAll(articles);
     }
 
     // ✅ Check and notify about new articles
@@ -112,6 +68,69 @@ class RssService {
     }
 
     return allArticles;
+  }
+
+  // ⚡ Helper method để fetch từ 1 URL với timeout và cache
+  static Future<List<ArticleModel>> _fetchFromUrl(String url, {int itemsLimit = 5}) async {
+    List<ArticleModel> articles = [];
+
+    try {
+      // ⚡ TIMEOUT 5 giây để tránh treo
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print("⏱️ Timeout khi tải RSS từ $url");
+          return http.Response('', 408); // Request Timeout
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final utf8Body = utf8.decode(response.bodyBytes);
+        final document = XmlDocument.parse(utf8Body);
+        final items = document.findAllElements('item');
+
+        for (var item in items.take(itemsLimit)) {
+          final rawTitle = item.findElements('title').first.innerText;
+          final title = HtmlUtils.decodeHtmlEntities(rawTitle);
+          final link = item.findElements('link').first.innerText;
+          final pubDate = item.findElements('pubDate').isNotEmpty
+              ? item.findElements('pubDate').first.innerText
+              : 'Không rõ thời gian';
+
+          String description = '';
+          if (item.findElements('content:encoded').isNotEmpty) {
+            description = item.findElements('content:encoded').first.innerText;
+          } else if (item.findElements('description').isNotEmpty) {
+            description = item.findElements('description').first.innerText;
+          }
+
+          description = description
+              .replaceAll(RegExp(r'<(script|style)[^>]*>.*?</\1>', dotAll: true), '')
+              .replaceAll(RegExp(r'<img[^>]*>', caseSensitive: false), '')
+              .replaceAll(RegExp(r'<a[^>]*>', caseSensitive: false), '')
+              .replaceAll('</a>', '')
+              .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+              .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
+              .trim();
+
+          description = HtmlUtils.decodeHtmlEntities(description);
+          final imageUrl = _extractImageUrl(item.toXmlString());
+
+          articles.add(ArticleModel(
+            title: title,
+            source: _detectSource(url),
+            time: pubDate,
+            imageUrl: imageUrl,
+            link: link,
+            description: description,
+          ));
+        }
+      }
+    } catch (e) {
+      print("❌ Lỗi khi tải RSS từ $url: $e");
+    }
+
+    return articles;
   }
 
   static String _extractImageUrl(String text) {
@@ -128,8 +147,17 @@ class RssService {
     return 'Nguồn khác';
   }
 
-  //Lấy tin tức theo danh mục
+  //Lấy tin tức theo danh mục với CACHE và LOAD SONG SONG
   static Future<List<ArticleModel>> fetchNewsByCategory(String category) async {
+    // ⚡ Kiểm tra cache trước
+    if (_cache.containsKey(category) && _cacheTimestamp.containsKey(category)) {
+      final cacheAge = DateTime.now().difference(_cacheTimestamp[category]!);
+      if (cacheAge < _cacheDuration) {
+        print("⚡ Sử dụng cache cho category: $category (còn ${_cacheDuration.inMinutes - cacheAge.inMinutes} phút)");
+        return _cache[category]!;
+      }
+    }
+
     List<ArticleModel> allArticles = [];
 
     // Nếu chọn "Tất cả", lấy từ tất cả RSS feeds
@@ -140,58 +168,17 @@ class RssService {
     //Lọc các RSS feeds theo danh mục
     final filteredFeeds = rssFeeds.where((feed) => feed['category'] == category).toList();
 
-    for (var feed in filteredFeeds) {
-      try {
-        final response = await http.get(Uri.parse(feed['url']!));
-        if (response.statusCode == 200) {
-          final utf8Body = utf8.decode(response.bodyBytes);
-          final document = XmlDocument.parse(utf8Body);
-          final items = document.findAllElements('item');
+    // ⚡ LOAD SONG SONG thay vì tuần tự - NHANH HỠN RẤT NHIỀU!
+    final futures = filteredFeeds.map((feed) => _fetchFromUrl(feed['url']!, itemsLimit: 4));
+    final results = await Future.wait(futures);
 
-          for (var item in items.take(5)) {
-            final rawTitle = item.findElements('title').first.innerText;
-            final title = HtmlUtils.decodeHtmlEntities(rawTitle);
-
-            final link = item.findElements('link').first.innerText;
-            final pubDate = item.findElements('pubDate').isNotEmpty
-                ? item.findElements('pubDate').first.innerText
-                : 'Không rõ thời gian';
-
-            String description = '';
-            if (item.findElements('content:encoded').isNotEmpty) {
-              description = item.findElements('content:encoded').first.innerText;
-            } else if (item.findElements('description').isNotEmpty) {
-              description = item.findElements('description').first.innerText;
-            }
-
-            description = description
-                .replaceAll(RegExp(r'<(script|style)[^>]*>.*?</\1>', dotAll: true), '')
-                .replaceAll(RegExp(r'<img[^>]*>', caseSensitive: false), '')
-                .replaceAll(RegExp(r'<a[^>]*>', caseSensitive: false), '')
-                .replaceAll('</a>', '')
-                .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
-                .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
-                .trim();
-
-            // Decode HTML entities
-            description = HtmlUtils.decodeHtmlEntities(description);
-
-            final imageUrl = _extractImageUrl(item.toXmlString());
-
-            allArticles.add(ArticleModel(
-              title: title,
-              source: _detectSource(feed['url']!),
-              time: pubDate,
-              imageUrl: imageUrl,
-              link: link,
-              description: description,
-            ));
-          }
-        }
-      } catch (e) {
-        print("Lỗi khi tải RSS từ ${feed['url']}: $e");
-      }
+    for (var articles in results) {
+      allArticles.addAll(articles);
     }
+
+    // ⚡ Lưu vào cache
+    _cache[category] = allArticles;
+    _cacheTimestamp[category] = DateTime.now();
 
     return allArticles;
   }
@@ -211,69 +198,15 @@ class RssService {
     }).toList();
   }
 
-  // Lấy tin tức ngẫu nhiên hoặc mới nhất
+  // Lấy tin tức ngẫu nhiên hoặc mới nhất - TỐI ƯU
   static Future<List<ArticleModel>> fetchRandomNews() async {
+    // ⚡ LOAD SONG SONG tất cả RSS feeds
+    final futures = rssUrls.map((url) => _fetchFromUrl(url, itemsLimit: 5));
+    final results = await Future.wait(futures);
+
     List<ArticleModel> allArticles = [];
-
-    // Lấy từ tất cả các RSS feeds
-    final allFeeds = [...rssUrls];
-
-    // Random thứ tự các feeds
-    allFeeds.shuffle(Random());
-
-    for (var url in allFeeds.take(3)) {
-      try {
-        final response = await http.get(Uri.parse(url));
-        if (response.statusCode == 200) {
-          final utf8Body = utf8.decode(response.bodyBytes);
-          final document = XmlDocument.parse(utf8Body);
-          final items = document.findAllElements('item').toList();
-
-          // Shuffle các items để random
-          items.shuffle(Random());
-
-          for (var item in items.take(8)) {
-            final rawTitle = item.findElements('title').first.innerText;
-            final title = HtmlUtils.decodeHtmlEntities(rawTitle);
-            final link = item.findElements('link').first.innerText;
-            final pubDate = item.findElements('pubDate').isNotEmpty
-                ? item.findElements('pubDate').first.innerText
-                : 'Không rõ thời gian';
-
-            String description = '';
-            if (item.findElements('content:encoded').isNotEmpty) {
-              description = item.findElements('content:encoded').first.innerText;
-            } else if (item.findElements('description').isNotEmpty) {
-              description = item.findElements('description').first.innerText;
-            }
-
-            description = description
-                .replaceAll(RegExp(r'<(script|style)[^>]*>.*?</\1>', dotAll: true), '')
-                .replaceAll(RegExp(r'<img[^>]*>', caseSensitive: false), '')
-                .replaceAll(RegExp(r'<a[^>]*>', caseSensitive: false), '')
-                .replaceAll('</a>', '')
-                .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
-                .replaceAll(RegExp(r'<[^>]*>', multiLine: true, caseSensitive: false), '')
-                .trim();
-
-            // Decode HTML entities
-            description = HtmlUtils.decodeHtmlEntities(description);
-
-            final imageUrl = _extractImageUrl(item.toXmlString());
-
-            allArticles.add(ArticleModel(
-              title: title,
-              source: _detectSource(url),
-              time: pubDate,
-              imageUrl: imageUrl,
-              link: link,
-              description: description,
-            ));
-          }
-        }
-      } catch (e) {
-        print("Lỗi khi tải RSS từ $url: $e");
-      }
+    for (var articles in results) {
+      allArticles.addAll(articles);
     }
 
     // Shuffle lại toàn bộ danh sách
