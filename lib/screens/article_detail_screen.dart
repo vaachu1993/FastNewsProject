@@ -10,6 +10,7 @@ import '../utils/date_formatter.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/article_summary_widget.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final ArticleModel article;
@@ -983,7 +984,12 @@ Chia sẻ từ FastNews 📱
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+
+                        // AI Summary Widget
+                        ArticleSummaryWidget(article: widget.article),
+
+                        const SizedBox(height: 8),
 
                         // Loading indicator mượt với animation
                         AnimatedContainer(

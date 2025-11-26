@@ -526,5 +526,45 @@ class FirestoreService {
       return false;
     }
   }
+
+  // ============ AI SUMMARY METHODS ============
+
+  /// Lấy tóm tắt bài viết từ Firestore cache
+  Future<String?> getArticleSummary(String articleId) async {
+    if (articleId.isEmpty) return null;
+    try {
+      final doc = await _firestore
+          .collection('article_summaries')
+          .doc(articleId)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        return data?['summary'] as String?;
+      }
+    } catch (e) {
+      print('❌ Lỗi khi lấy tóm tắt từ Firestore: $e');
+    }
+    return null;
+  }
+
+  /// Lưu tóm tắt bài viết vào Firestore
+  Future<void> saveArticleSummary(String articleId, String summary) async {
+    if (articleId.isEmpty) return;
+    try {
+      await _firestore
+          .collection('article_summaries')
+          .doc(articleId)
+          .set({
+        'summary': summary,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'articleId': articleId,
+      }, SetOptions(merge: true));
+
+      print('💾 Đã lưu tóm tắt vào Firestore cho article: $articleId');
+    } catch (e) {
+      print('❌ Lỗi khi lưu tóm tắt vào Firestore: $e');
+    }
+  }
 }
 

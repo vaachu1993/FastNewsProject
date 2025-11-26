@@ -11,6 +11,10 @@ class ArticleModel {
   final String link;
   final String? description;
 
+  // AI Summary fields
+  String? summary;
+  DateTime? summaryUpdatedAt;
+
   ArticleModel({
     String? id,
     required String title,
@@ -19,6 +23,8 @@ class ArticleModel {
     required this.imageUrl,
     required this.link,
     String? description,
+    this.summary,
+    this.summaryUpdatedAt,
   }) : id = id ?? _generateId(link),
        title = _decodeHtmlEntities(title),
        description = description != null ? _decodeHtmlEntities(description) : null;
@@ -50,6 +56,8 @@ class ArticleModel {
     'imageUrl': imageUrl,
     'link': link,
     'description': description,
+    'summary': summary,
+    'summaryUpdatedAt': summaryUpdatedAt?.toIso8601String(),
   };
 
   factory ArticleModel.fromJson(Map<String, dynamic> json) => ArticleModel(
@@ -60,5 +68,9 @@ class ArticleModel {
     imageUrl: json['imageUrl'],
     link: json['link'],
     description: json['description'],
+    summary: json['summary'] as String?,
+    summaryUpdatedAt: json['summaryUpdatedAt'] != null
+        ? DateTime.tryParse(json['summaryUpdatedAt'])
+        : null,
   );
 }

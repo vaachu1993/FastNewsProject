@@ -21,8 +21,7 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
     final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
     final loc = AppLocalizations(currentLanguage);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+    return Scaffold(backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
