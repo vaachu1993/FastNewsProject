@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'services/notification_service.dart';
@@ -41,6 +42,10 @@ void main() async {
   final localizationService = LocalizationService();
   await localizationService.initialize();
 
+  // Initialize Android Alarm Manager for background notifications
+  await AndroidAlarmManager.initialize();
+  print('🔔 Android Alarm Manager initialized in main');
+
   // Initialize Notification Service
   final notificationService = NotificationService();
   await notificationService.initialize();
@@ -72,44 +77,9 @@ class FastNewsApp extends StatefulWidget {
   State<FastNewsApp> createState() => _FastNewsAppState();
 }
 
-class _FastNewsAppState extends State<FastNewsApp> with WidgetsBindingObserver {
-  final NotificationService _notificationService = NotificationService();
+class _FastNewsAppState extends State<FastNewsApp> {
   final LocalizationService _localizationService = LocalizationService();
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _notificationService.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-
-    switch (state) {
-      case AppLifecycleState.resumed:
-        // App is in foreground
-        _notificationService.onAppStateChanged(true);
-        break;
-      case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.detached:
-        // App is in background or closed
-        _notificationService.onAppStateChanged(false);
-        break;
-      case AppLifecycleState.hidden:
-        // App is hidden but still running
-        _notificationService.onAppStateChanged(false);
-        break;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

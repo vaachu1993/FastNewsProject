@@ -11,7 +11,11 @@ import 'notification_service.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    // Add Web Client ID from google-services.json to fix DEVELOPER_ERROR
+    serverClientId: '346373834818-bovjratu2qu8135ms6enn9ufh2he9jee.apps.googleusercontent.com',
+  );
 
 
   // Get current user

@@ -3,11 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/article_model.dart';
 import 'dart:convert';
 import 'dart:async';
-import 'dart:isolate';
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'rss_service.dart';
-import 'background_news_service.dart';
+import 'alarm_notification_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -19,20 +16,13 @@ class NotificationService {
   // Callback for handling notification taps
   static void Function(String articleJson)? onNotificationTap;
 
-  // Background task constants
-  static const String _isolatePortName = 'notification_isolate_port';
-
-  // Timer for periodic checks
+  // Timer for periodic checks (cleanup only)
   Timer? _periodicTimer;
-
-  // Background isolate
-  static ReceivePort? _receivePort;
 
   // Initialize notification service
   Future<void> initialize() async {
-    // Initialize AdvancedNotificationService instead of Workmanager
-    final advancedService = AdvancedNotificationService();
-    await advancedService.initialize();
+    // Initialize AlarmNotificationService for true background operation
+    await AlarmNotificationService.initialize();
 
     // Android initialization settings
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -57,20 +47,7 @@ class NotificationService {
     // Request permissions for Android 13+
     await _requestPermissions();
 
-    // Initialize background processing
-    await _initializeBackgroundProcessing();
-
-    print('🔔 Notification service initialized with AdvancedNotificationService');
-  }
-
-  // Initialize background processing
-  Future<void> _initializeBackgroundProcessing() async {
-    final prefs = await SharedPreferences.getInstance();
-    final notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-
-    if (notificationsEnabled) {
-      await startBackgroundNewsCheck();
-    }
+    print('🔔 Notification service initialized with AlarmNotificationService');
   }
 
   // Request notification permissions
@@ -79,19 +56,39 @@ class NotificationService {
         _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
     if (androidImplementation != null) {
-      await androidImplementation.requestNotificationsPermission();
+      final granted = await androidImplementation.requestNotificationsPermission();
+      print('🔔 Android notification permission granted: $granted');
+
+      // Also request exact alarm permission for background tasks
+      final exactAlarmGranted = await androidImplementation.requestExactAlarmsPermission();
+      print('⏰ Exact alarm permission granted: $exactAlarmGranted');
     }
 
     final IOSFlutterLocalNotificationsPlugin? iosImplementation =
         _notifications.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
 
     if (iosImplementation != null) {
-      await iosImplementation.requestPermissions(
+      final granted = await iosImplementation.requestPermissions(
         alert: true,
         badge: true,
         sound: true,
       );
+      print('🔔 iOS notification permission granted: $granted');
     }
+  }
+
+  // Check if notification permissions are granted
+  Future<bool> checkNotificationPermission() async {
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidImplementation != null) {
+      final granted = await androidImplementation.areNotificationsEnabled();
+      print('🔔 Notification permission status: $granted');
+      return granted ?? false;
+    }
+
+    return true; // Assume granted on other platforms
   }
 
   // Handle notification tap
@@ -202,13 +199,14 @@ class NotificationService {
     // Cancel existing timer
     _periodicTimer?.cancel();
 
-    // Use AdvancedNotificationService for enhanced background checking
-    final advancedService = AdvancedNotificationService();
-    await advancedService.startBackgroundNewsCheck();
+    // Use AlarmNotificationService for TRUE background operation
+    // This works even when app is completely closed
+    await AlarmNotificationService.startPeriodicNewsCheck();
 
-    print('🚀 Background news checking started with AdvancedNotificationService');
-    print('📋 Multiple strategies: Timers + Scheduled notifications');
-    print('⏰ Enhanced coverage for app-closed scenarios');
+    print('🚀 Background news checking started with AlarmManager');
+    print('⏰ Will check every 15 minutes even when app is closed');
+    print('🔋 Device will wake up if needed');
+    print('✅ No backup needed - AlarmManager handles all scenarios');
   }
 
   // Stop background news checking
@@ -216,104 +214,10 @@ class NotificationService {
     _periodicTimer?.cancel();
     _periodicTimer = null;
 
-    // Stop AdvancedNotificationService
-    final advancedService = AdvancedNotificationService();
-    await advancedService.stopBackgroundNewsCheck();
+    // Stop AlarmNotificationService
+    await AlarmNotificationService.stopPeriodicNewsCheck();
 
-    print('🛑 Background news checking stopped (AdvancedNotificationService stopped)');
-  }
-
-  // Background news check method
-  Future<void> _checkNewsInBackground() async {
-    try {
-      print('📡 Checking news in background...');
-
-      // Fetch latest news
-      final latestNews = await RssService.fetchLatestNews();
-
-      if (latestNews.isNotEmpty) {
-        // Check and notify about new articles
-        await checkAndNotifyNewArticles(latestNews);
-      }
-
-      // Schedule next scheduled notification check
-      await _scheduleNextCheck();
-
-    } catch (e) {
-      print('❌ Error checking news in background: $e');
-    }
-  }
-
-  // Schedule next notification check (for when app is completely closed)
-  Future<void> _scheduleNextCheck() async {
-    // Since schedule method may not be available, we'll use a Timer approach
-    Timer(const Duration(minutes: 30), () async {
-      await _checkNewsInBackground();
-    });
-  }
-
-  // Handle app lifecycle changes
-  Future<void> onAppStateChanged(bool isAppInForeground) async {
-    final prefs = await SharedPreferences.getInstance();
-    final notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-
-    if (!notificationsEnabled) return;
-
-    if (isAppInForeground) {
-      // App is in foreground - check for new articles immediately
-      print('📱 App in foreground - checking news...');
-      await _checkNewsInBackground();
-    } else {
-      // App goes to background - schedule more frequent checks
-      print('🔄 App in background - scheduling background checks...');
-      await _scheduleBackgroundChecks();
-    }
-  }
-
-  // Schedule multiple background checks when app is closed
-  Future<void> _scheduleBackgroundChecks() async {
-    // Schedule checks at different intervals using Timers instead of scheduled notifications
-    final checkIntervals = [5, 15, 30, 60]; // minutes
-
-    for (int i = 0; i < checkIntervals.length; i++) {
-      final minutes = checkIntervals[i];
-
-      Timer(Duration(minutes: minutes), () async {
-        await _checkNewsInBackground();
-      });
-    }
-  }
-
-  // Static method for background isolate
-  @pragma('vm:entry-point')
-  static void backgroundIsolateEntryPoint() {
-    WidgetsFlutterBinding.ensureInitialized();
-
-    final port = IsolateNameServer.lookupPortByName(_isolatePortName);
-
-    if (port != null) {
-      port.send('background_task_started');
-
-      // Perform background news check
-      Timer.periodic(const Duration(minutes: 15), (timer) async {
-        try {
-          final latestNews = await RssService.fetchLatestNews();
-
-          if (latestNews.isNotEmpty) {
-            // Send data back to main isolate
-            port.send({
-              'type': 'new_articles',
-              'data': latestNews.map((e) => e.toJson()).toList(),
-            });
-          }
-        } catch (e) {
-          port.send({
-            'type': 'error',
-            'message': e.toString(),
-          });
-        }
-      });
-    }
+    print('🛑 Background news checking stopped (AlarmManager service stopped)');
   }
 
   // Get notification status
@@ -329,33 +233,56 @@ class NotificationService {
 
   // Test notification
   Future<void> sendTestNotification() async {
-    const androidDetails = AndroidNotificationDetails(
-      'news_channel',
-      'Tin tức mới',
-      channelDescription: 'Thông báo về tin tức mới nhất',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      color: Color(0xFF5A7D3C),
-    );
+    try {
+      print('🧪 Sending test notification...');
 
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+      // Check permission first
+      final hasPermission = await checkNotificationPermission();
+      print('🔔 Has notification permission: $hasPermission');
 
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
+      if (!hasPermission) {
+        print('⚠️ No notification permission! Requesting...');
+        await _requestPermissions();
+      }
 
-    await _notifications.show(
-      999999,
-      '📰 FastNews',
-      'Thông báo tin tức đang hoạt động!',
-      details,
-    );
+      const androidDetails = AndroidNotificationDetails(
+        'news_channel',
+        'Tin tức mới',
+        channelDescription: 'Thông báo về tin tức mới nhất',
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        color: Color(0xFF5A7D3C),
+        playSound: true,
+        enableVibration: true,
+        enableLights: true,
+        showWhen: true,
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      final now = DateTime.now();
+      await _notifications.show(
+        999999,
+        '📰 FastNews Test',
+        'Thông báo đang hoạt động! ${now.hour}:${now.minute}:${now.second}',
+        details,
+      );
+
+      print('✅ Test notification sent successfully!');
+    } catch (e) {
+      print('❌ Error sending test notification: $e');
+      rethrow;
+    }
   }
 
   // Test notification system with mock data
@@ -391,6 +318,5 @@ class NotificationService {
   // Dispose resources
   void dispose() {
     _periodicTimer?.cancel();
-    _receivePort?.close();
   }
 }

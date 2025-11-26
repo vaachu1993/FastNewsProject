@@ -51,21 +51,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (!mounted) return;
 
-    // Show confirmation
+    // Show confirmation - simple message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          value ? loc.notificationEnabled : loc.notificationDisabled,
+          value
+            ? (currentLanguage == 'vi'
+                ? '✅ Đã bật thông báo tin tức'
+                : '✅ Notifications enabled')
+            : (currentLanguage == 'vi'
+                ? '🔕 Đã tắt thông báo tin tức'
+                : '🔕 Notifications disabled'),
         ),
         backgroundColor: value ? Colors.green : Colors.grey[700],
         duration: const Duration(seconds: 2),
-        action: value ? SnackBarAction(
-          label: loc.testNotification,
-          textColor: Colors.white,
-          onPressed: () async {
-            await _notificationService.sendTestNotification();
-          },
-        ) : null,
       ),
     );
   }
@@ -123,6 +122,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _pushNotifications,
             onChanged: _isLoadingNotificationState ? null : (val) => _toggleNotifications(val),
           ),
+
           _buildSimpleDivider(),
 
           // Dark Mode
