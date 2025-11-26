@@ -77,20 +77,6 @@ class NotificationService {
     }
   }
 
-  // Check if notification permissions are granted
-  Future<bool> checkNotificationPermission() async {
-    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-        _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-
-    if (androidImplementation != null) {
-      final granted = await androidImplementation.areNotificationsEnabled();
-      print('🔔 Notification permission status: $granted');
-      return granted ?? false;
-    }
-
-    return true; // Assume granted on other platforms
-  }
-
   // Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
     if (response.payload != null && onNotificationTap != null) {
@@ -231,89 +217,7 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  // Test notification
-  Future<void> sendTestNotification() async {
-    try {
-      print('🧪 Sending test notification...');
 
-      // Check permission first
-      final hasPermission = await checkNotificationPermission();
-      print('🔔 Has notification permission: $hasPermission');
-
-      if (!hasPermission) {
-        print('⚠️ No notification permission! Requesting...');
-        await _requestPermissions();
-      }
-
-      const androidDetails = AndroidNotificationDetails(
-        'news_channel',
-        'Tin tức mới',
-        channelDescription: 'Thông báo về tin tức mới nhất',
-        importance: Importance.max,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-        color: Color(0xFF5A7D3C),
-        playSound: true,
-        enableVibration: true,
-        enableLights: true,
-        showWhen: true,
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      final now = DateTime.now();
-      await _notifications.show(
-        999999,
-        '📰 FastNews Test',
-        'Thông báo đang hoạt động! ${now.hour}:${now.minute}:${now.second}',
-        details,
-      );
-
-      print('✅ Test notification sent successfully!');
-    } catch (e) {
-      print('❌ Error sending test notification: $e');
-      rethrow;
-    }
-  }
-
-  // Test notification system with mock data
-  Future<void> testNotificationSystem() async {
-    print('🧪 Testing notification system...');
-
-    // Create mock article for testing
-    final mockArticle = ArticleModel(
-      title: 'Test notification - Tin tức thử nghiệm',
-      source: 'FastNews Test',
-      time: DateTime.now().toString(),
-      imageUrl: 'https://via.placeholder.com/300x200',
-      link: 'https://example.com',
-      description: 'Đây là tin tức thử nghiệm để kiểm tra hệ thống thông báo.',
-    );
-
-    // Show test notification
-    await showNewArticleNotification(mockArticle);
-    print('✅ Test notification sent!');
-
-    // Log current notification settings
-    final enabled = await areNotificationsEnabled();
-    print('📱 Notifications enabled: $enabled');
-
-    if (enabled) {
-      print('🚀 Background checking is active');
-      print('⏰ Next check in 30 minutes');
-    } else {
-      print('🔕 Notifications are disabled');
-    }
-  }
 
   // Dispose resources
   void dispose() {

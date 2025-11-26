@@ -6,8 +6,13 @@ import 'safe_network_image.dart';
 
 class ArticleCardHorizontal extends StatelessWidget {
   final ArticleModel article;
+  final bool isHorizontalList;
 
-  const ArticleCardHorizontal({super.key, required this.article});
+  const ArticleCardHorizontal({
+    super.key,
+    required this.article,
+    this.isHorizontalList = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +27,10 @@ class ArticleCardHorizontal extends StatelessWidget {
         );
       },
       child: Container(
-        width: 280,
-        margin: const EdgeInsets.only(right: 16),
+        width: isHorizontalList ? 280 : double.infinity,
+        margin: isHorizontalList
+            ? const EdgeInsets.only(right: 16)
+            : const EdgeInsets.only(bottom: 12),
         child: Card(
           shape:
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

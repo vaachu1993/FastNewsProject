@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'services/notification_service.dart';
+import 'services/fcm_service.dart';
 import 'services/auth_service.dart';
 import 'services/localization_service.dart';
 import 'widgets/localization_provider.dart';
@@ -46,9 +48,17 @@ void main() async {
   await AndroidAlarmManager.initialize();
   print('🔔 Android Alarm Manager initialized in main');
 
+  // Initialize Firebase Cloud Messaging Background Handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
   // Initialize Notification Service
   final notificationService = NotificationService();
   await notificationService.initialize();
+
+  // Initialize FCM Service
+  final fcmService = FCMService();
+  await fcmService.initialize();
+  print('🔥 Firebase Cloud Messaging initialized');
 
   // Setup notification tap handler
   NotificationService.onNotificationTap = (String articleJson) {

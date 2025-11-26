@@ -17,7 +17,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final _authService = AuthService();
   final _firestoreService = FirestoreService();
   int selectedCategory = 0;
@@ -117,7 +118,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  Future<void> _loadNews({bool isInitial = false, bool isRefresh = false}) async {
+  Future<void> _loadNews({
+    bool isInitial = false,
+    bool isRefresh = false,
+  }) async {
     if (isRefresh) {
       setState(() {
         selectedCategory = 0;
@@ -157,7 +161,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
         List<ArticleModel> allNews = [];
         for (var i = 0; i < results.length; i++) {
-          print('  - Got ${results[i].length} articles for ${userFavoriteTopics[i]}');
+          print(
+            '  - Got ${results[i].length} articles for ${userFavoriteTopics[i]}',
+          );
           allNews.addAll(results[i]);
         }
 
@@ -171,7 +177,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           print('✅ Category "$category" is in favorites - loading news');
           news = await RssService.fetchNewsByCategory(category);
         } else {
-          print('⚠️ Category "$category" is NOT in favorites - showing empty list');
+          print(
+            '⚠️ Category "$category" is NOT in favorites - showing empty list',
+          );
           // If selected category is not in favorites, show empty list
           news = [];
         }
@@ -201,7 +209,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             icon: Icon(Icons.menu, color: Theme.of(context).iconTheme.color),
             onPressed: () {
               // Find the root Scaffold (MainScreen's Scaffold)
-              final scaffoldState = context.findRootAncestorStateOfType<ScaffoldState>();
+              final scaffoldState = context
+                  .findRootAncestorStateOfType<ScaffoldState>();
               scaffoldState?.openDrawer();
             },
           ),
@@ -219,11 +228,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
-                Icons.newspaper,
-                color: Colors.white,
-                size: 20,
-              ),
+              child: const Icon(Icons.newspaper, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 8),
             Text(
@@ -237,7 +242,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ],
         ),
         actions: [
-          Icon(Icons.notifications_outlined, color: Theme.of(context).iconTheme.color),
+          Icon(
+            Icons.notifications_outlined,
+            color: Theme.of(context).iconTheme.color,
+          ),
           const SizedBox(width: 10),
           GestureDetector(
             onTap: () {
@@ -247,14 +255,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: CircleAvatar(
               radius: 15,
               backgroundColor: const Color(0xFF5A7D3C),
-              backgroundImage: (_userData?['photoURL'] != null && _userData!['photoURL'].toString().isNotEmpty) ||
-                      (_currentUser?.photoURL != null && _currentUser!.photoURL!.isNotEmpty)
-                  ? NetworkImage(_userData?['photoURL'] ?? _currentUser?.photoURL ?? '')
+              backgroundImage:
+                  (_userData?['photoURL'] != null &&
+                          _userData!['photoURL'].toString().isNotEmpty) ||
+                      (_currentUser?.photoURL != null &&
+                          _currentUser!.photoURL!.isNotEmpty)
+                  ? NetworkImage(
+                      _userData?['photoURL'] ?? _currentUser?.photoURL ?? '',
+                    )
                   : null,
-              child: (_userData?['photoURL'] == null || _userData!['photoURL'].toString().isEmpty) &&
-                      (_currentUser?.photoURL == null || _currentUser!.photoURL!.isEmpty)
+              child:
+                  (_userData?['photoURL'] == null ||
+                          _userData!['photoURL'].toString().isEmpty) &&
+                      (_currentUser?.photoURL == null ||
+                          _currentUser!.photoURL!.isEmpty)
                   ? Text(
-                      (_userData?['displayName'] ?? _currentUser?.displayName ?? _userData?['email'] ?? _currentUser?.email ?? 'U')[0].toUpperCase(),
+                      (_userData?['displayName'] ??
+                              _currentUser?.displayName ??
+                              _userData?['email'] ??
+                              _currentUser?.email ??
+                              'U')[0]
+                          .toUpperCase(),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -275,7 +296,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   onRefresh: () => _loadNews(isRefresh: true),
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -288,7 +312,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: Theme.of(context).textTheme.bodyLarge?.color,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodyLarge?.color,
                               ),
                             ),
                             TextButton(
@@ -311,7 +337,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               if (userFavoriteTopics.isEmpty) {
                                 displayCategories = categories;
                               } else {
-                                displayCategories = ['Tất cả', ...userFavoriteTopics];
+                                displayCategories = [
+                                  'Tất cả',
+                                  ...userFavoriteTopics,
+                                ];
                               }
 
                               return ListView.builder(
@@ -320,39 +349,56 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 physics: const BouncingScrollPhysics(),
                                 itemCount: displayCategories.length,
                                 itemBuilder: (context, index) {
-                                  final categoryIndex = userFavoriteTopics.isEmpty
+                                  final categoryIndex =
+                                      userFavoriteTopics.isEmpty
                                       ? index
-                                      : categories.indexOf(displayCategories[index]);
-                                  final bool isSelected = selectedCategory == categoryIndex;
+                                      : categories.indexOf(
+                                          displayCategories[index],
+                                        );
+                                  final bool isSelected =
+                                      selectedCategory == categoryIndex;
 
                                   return GestureDetector(
                                     onTap: () {
-                                      setState(() => selectedCategory = categoryIndex);
+                                      setState(
+                                        () => selectedCategory = categoryIndex,
+                                      );
                                       _loadNews();
                                       // Scroll mượt đến category được chọn
                                       _categoryScrollController.animateTo(
                                         index * 100.0,
-                                        duration: const Duration(milliseconds: 300),
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
                                         curve: Curves.easeInOut,
                                       );
                                     },
                                     child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 250),
+                                      duration: const Duration(
+                                        milliseconds: 250,
+                                      ),
                                       curve: Curves.easeInOut,
-                                      margin: const EdgeInsets.only(right: 10, bottom: 4),
+                                      margin: const EdgeInsets.only(
+                                        right: 10,
+                                        bottom: 4,
+                                      ),
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: isSelected
                                             ? Colors.green
-                                            : Theme.of(context).brightness == Brightness.dark
-                                                ? const Color(0xFF2A2740)
-                                                : Colors.grey.shade200,
+                                            : Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                            ? const Color(0xFF2A2740)
+                                            : Colors.grey.shade200,
                                         borderRadius: BorderRadius.circular(20),
                                         boxShadow: isSelected
                                             ? [
                                                 BoxShadow(
-                                                  color: Colors.green.withValues(alpha: 0.3),
+                                                  color: Colors.green
+                                                      .withValues(alpha: 0.3),
                                                   blurRadius: 8,
                                                   offset: const Offset(0, 2),
                                                 ),
@@ -360,16 +406,25 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                             : [],
                                       ),
                                       child: AnimatedDefaultTextStyle(
-                                        duration: const Duration(milliseconds: 250),
+                                        duration: const Duration(
+                                          milliseconds: 250,
+                                        ),
                                         curve: Curves.easeInOut,
                                         style: TextStyle(
                                           color: isSelected
                                               ? Colors.white
-                                              : Theme.of(context).textTheme.bodyLarge?.color,
+                                              : Theme.of(
+                                                  context,
+                                                ).textTheme.bodyLarge?.color,
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,
                                         ),
-                                        child: Text(_translateCategory(displayCategories[index], currentLanguage)),
+                                        child: Text(
+                                          _translateCategory(
+                                            displayCategories[index],
+                                            currentLanguage,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   );
@@ -380,32 +435,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                         const SizedBox(height: 14),
 
-
-
                         // Danh sách tin nổi bật (trượt ngang) với AnimatedSwitcher
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 400),
                           switchInCurve: Curves.easeInOut,
                           switchOutCurve: Curves.easeInOut,
-                          transitionBuilder: (Widget child, Animation<double> animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0.1, 0),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            );
-                          },
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0.1, 0),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
+                                  ),
+                                );
+                              },
                           child: latestNews.isEmpty
                               ? Container(
                                   key: const ValueKey<String>('empty'),
                                   height: 320,
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context).brightness == Brightness.dark
+                                    color:
+                                        Theme.of(context).brightness ==
+                                            Brightness.dark
                                         ? const Color(0xFF2A2740)
                                         : Colors.grey.shade100,
                                     borderRadius: BorderRadius.circular(12),
@@ -424,7 +480,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
-                                        loc.translate('no_articles_in_category'),
+                                        loc.translate(
+                                          'no_articles_in_category',
+                                        ),
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           fontSize: 16,
@@ -434,7 +492,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
-                                        loc.translate('select_favorite_topics_hint'),
+                                        loc.translate(
+                                          'select_favorite_topics_hint',
+                                        ),
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           fontSize: 14,
@@ -454,22 +514,31 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     itemBuilder: (context, index) {
                                       return TweenAnimationBuilder<double>(
                                         tween: Tween(begin: 0.0, end: 1.0),
-                                        duration: Duration(milliseconds: 300 + (index * 50)),
+                                        duration: Duration(
+                                          milliseconds: 300 + (index * 50),
+                                        ),
                                         curve: Curves.easeOut,
                                         builder: (context, value, child) {
                                           return Opacity(
                                             opacity: value,
                                             child: Transform.translate(
-                                              offset: Offset(20 * (1 - value), 0),
+                                              offset: Offset(
+                                                20 * (1 - value),
+                                                0,
+                                              ),
                                               child: child,
                                             ),
                                           );
                                         },
                                         child: Container(
                                           width: 300,
-                                          margin: const EdgeInsets.only(right: 14),
+                                          margin: const EdgeInsets.only(
+                                            right: 14,
+                                          ),
                                           child: ArticleCardHorizontal(
-                                              article: latestNews[index]),
+                                            article: latestNews[index],
+                                            isHorizontalList: true,
+                                          ),
                                         ),
                                       );
                                     },
@@ -484,9 +553,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           children: [
                             Text(
                               loc.translate('global_news'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
+                                color: Theme.of(
+                                  context,
+                                ).textTheme.bodyLarge?.color,
                               ),
                             ),
                             TextButton(
@@ -505,24 +577,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           duration: const Duration(milliseconds: 400),
                           switchInCurve: Curves.easeInOut,
                           switchOutCurve: Curves.easeInOut,
-                          transitionBuilder: (Widget child, Animation<double> animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.05),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            );
-                          },
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 0.05),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
+                                  ),
+                                );
+                              },
                           child: Column(
                             key: ValueKey<int>(selectedCategory + 1000),
                             children: latestNews
                                 .skip(5)
                                 .take(5)
-                                .map((a) => ArticleCardHorizontal(article: a))
+                                .map(
+                                  (a) => ArticleCardHorizontal(article: a),
+                                )
                                 .toList(),
                           ),
                         ),
@@ -562,7 +637,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
     );
   }
-
 
   String _getTopicIcon(String topic) {
     switch (topic) {
