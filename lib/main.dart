@@ -21,31 +21,31 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ Load environment variables từ .env file
+  // Load environment variables từ .env file
   await dotenv.load(fileName: ".env");
 
   // Initialize Firebase
   await Firebase.initializeApp();
 
-  // ✅ Configure Firestore with offline persistence
+  // Configure Firestore with offline persistence
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
-  // ✅ Initialize AuthService with persistence
+  // Initialize AuthService with persistence
   final authService = AuthService();
   await authService.initializeAuth();
 
-  // ✅ Initialize Localization Service
+  // Initialize Localization Service
   final localizationService = LocalizationService();
   await localizationService.initialize();
 
-  // ✅ Initialize Notification Service
+  // Initialize Notification Service
   final notificationService = NotificationService();
   await notificationService.initialize();
 
-  // ✅ Setup notification tap handler
+  // Setup notification tap handler
   NotificationService.onNotificationTap = (String articleJson) {
     try {
       final articleData = jsonDecode(articleJson);
@@ -119,7 +119,7 @@ class _FastNewsAppState extends State<FastNewsApp> with WidgetsBindingObserver {
         child: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
             return MaterialApp(
-              navigatorKey: navigatorKey, // ✅ Global navigator key
+              navigatorKey: navigatorKey, // Global navigator key
               debugShowCheckedModeBanner: false,
               title: 'FastNews',
               theme: themeProvider.lightTheme,

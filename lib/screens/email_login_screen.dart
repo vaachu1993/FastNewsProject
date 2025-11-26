@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../providers/theme_provider.dart';
 import 'main_screen.dart';
 import 'topics_selection_screen.dart';
 import 'forgot_password_screen.dart';
@@ -117,18 +119,25 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Đăng nhập',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
@@ -148,7 +157,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5A7D3C).withOpacity(0.1),
+                      color: const Color(0xFF5A7D3C).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -162,22 +171,25 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 const SizedBox(height: 24),
 
                 // Title
-                const Text(
+                Text(
                   'Đăng nhập bằng Email',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C2C2C),
+                    color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
                   ),
                 ),
 
                 const SizedBox(height: 8),
 
-                const Text(
+                Text(
                   'Nhập email và mật khẩu của bạn',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14, color: Color(0xFF808080)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF808080),
+                  ),
                 ),
 
                 const SizedBox(height: 40),
@@ -186,16 +198,19 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                   decoration: InputDecoration(
                     labelText: 'Email',
+                    labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
                     hintText: 'Nhập email của bạn',
-                    prefixIcon: const Icon(Icons.email_outlined),
+                    hintStyle: TextStyle(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400),
+                    prefixIcon: Icon(Icons.email_outlined, color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -222,15 +237,19 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
                   decoration: InputDecoration(
                     labelText: 'Mật khẩu',
+                    labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
                     hintText: 'Nhập mật khẩu',
-                    prefixIcon: const Icon(Icons.lock_outline),
+                    hintStyle: TextStyle(color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400),
+                    prefixIcon: Icon(Icons.lock_outline, color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                       ),
                       onPressed: () {
                         setState(() {
@@ -243,7 +262,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderSide: BorderSide(color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),

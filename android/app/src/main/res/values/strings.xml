@@ -1,17 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-    Facebook App ID và Client Token
-
-    LƯU Ý: Bạn cần thay thế giá trị này bằng App ID và Client Token thật từ Facebook Developer Console
-
-    Cách lấy:
-    1. Vào https://developers.facebook.com/
-    2. Chọn app FastNews của bạn
-    3. Vào Settings -> Basic
-    4. Copy App ID và App Secret (Client Token)
-    -->
-    <string name="facebook_app_id">836088289403124</string>
-    <string name="facebook_client_token">df16569f94944df64c058e60ab6b9f72</string>
+    <!-- No resources needed at this time -->
 </resources>
 

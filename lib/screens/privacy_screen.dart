@@ -131,7 +131,7 @@ class PrivacyScreen extends StatelessWidget {
 
 • Google Firebase: Xác thực và lưu trữ dữ liệu
 • Google Sign-In: Đăng nhập bằng tài khoản Google
-• Facebook Login: Đăng nhập bằng tài khoản Facebook
+
 • Analytics: Phân tích hành vi người dùng
 
 Các dịch vụ này có chính sách bảo mật riêng.'''
@@ -139,7 +139,7 @@ Các dịch vụ này có chính sách bảo mật riêng.'''
 
 • Google Firebase: Authentication and data storage
 • Google Sign-In: Sign in with Google account
-• Facebook Login: Sign in with Facebook account
+
 • Analytics: User behavior analysis
 
 These services have their own privacy policies.''',

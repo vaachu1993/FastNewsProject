@@ -81,8 +81,8 @@ class HelpScreen extends StatelessWidget {
             context,
             currentLanguage == 'vi' ? 'Làm sao để đăng ký tài khoản?' : 'How do I create an account?',
             currentLanguage == 'vi'
-                ? 'Bạn có thể đăng ký bằng email, Google hoặc Facebook. Chỉ cần nhấn nút "Đăng nhập" và chọn phương thức đăng ký phù hợp.'
-                : 'You can sign up with email, Google, or Facebook. Just tap "Login" and choose your preferred sign-up method.',
+                ? 'Bạn có thể đăng ký bằng email hoặc Google. Chỉ cần nhấn nút "Đăng nhập" và chọn phương thức đăng ký phù hợp.'
+                : 'You can sign up with email or Google. Just tap "Login" and choose your preferred sign-up method.',
             Icons.person_add_outlined,
           ),
           _buildFAQItem(

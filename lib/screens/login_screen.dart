@@ -5,6 +5,8 @@ import 'package:fastnews/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 import 'main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,48 +19,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _authService = AuthService();
   bool _isGoogleLoading = false;
-  bool _isFacebookLoading = false;
-
-  // Handle Facebook Sign In
-  Future<void> _handleFacebookSignIn() async {
-    setState(() => _isFacebookLoading = true);
-
-    try {
-      String? result = await _authService.signInWithFacebook();
-
-      if (!mounted) return;
-
-      if (result == null) {
-        // Facebook login thành công
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đăng nhập Facebook thành công!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        await _checkAndNavigate();
-      } else {
-        // Hiển thị lỗi
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result),
-            backgroundColor: result.contains('❌') ? Colors.orange : Colors.red,
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isFacebookLoading = false);
-      }
-    }
-  }
 
   // Handle Google Sign In
   Future<void> _handleGoogleSignIn() async {
@@ -153,8 +113,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -170,12 +134,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
 
                 // App Name
-                const Text(
+                Text(
                   'FastNews',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2C2C2C),
+                    color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -183,11 +147,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
 
                 // Welcome Text
-                const Text(
+                Text(
                   "Chào mừng! Hãy đăng nhập vào tài khoản của bạn!",
                   style: TextStyle(
                     fontSize: 15,
-                    color: Color(0xFF808080),
+                    color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF808080),
                     height: 1.5,
                   ),
                   textAlign: TextAlign.center,
@@ -195,31 +159,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 50),
 
-                // Facebook Button
-                _buildFacebookButton(context),
-
-                const SizedBox(height: 16),
-
-                // Google Button
+                // Google Button (Full Width)
                 _buildGoogleButton(context),
 
                 const SizedBox(height: 32),
 
                 // Or divider
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: Divider(color: Color(0xFFE0E0E0))),
+                    Expanded(child: Divider(color: isDarkMode ? Colors.grey.shade700 : const Color(0xFFE0E0E0))),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'hoặc',
                         style: TextStyle(
-                          color: Color(0xFF808080),
+                          color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF808080),
                           fontSize: 14,
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(color: Color(0xFFE0E0E0))),
+                    Expanded(child: Divider(color: isDarkMode ? Colors.grey.shade700 : const Color(0xFFE0E0E0))),
                   ],
                 ),
 
@@ -263,9 +222,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       "Chưa có tài khoản?  ",
-                      style: TextStyle(color: Color(0xFF2C2C2C), fontSize: 14),
+                      style: TextStyle(
+                        color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF2C2C2C),
+                        fontSize: 14,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -354,64 +316,25 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildFacebookButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton(
-        onPressed: _isFacebookLoading ? null : _handleFacebookSignIn,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          backgroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-        child: _isFacebookLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1877F2)),
-                ),
-              )
-            : Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Icon positioned on the left
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: const Icon(Icons.facebook, color: Color(0xFF1877F2), size: 24),
-                  ),
-                  // Centered text
-                  const Text(
-                    'Tiếp tục với Facebook',
-                    style: TextStyle(
-                      color: Color(0xFF2C2C2C),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
 
   Widget _buildGoogleButton(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: OutlinedButton(
         onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFFE0E0E0), width: 1.5),
+          side: BorderSide(
+            color: isDarkMode ? Colors.grey.shade700 : const Color(0xFFE0E0E0),
+            width: 1.5,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
-          backgroundColor: Colors.white,
+          backgroundColor: isDarkMode ? const Color(0xFF2A2740) : Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
         child: _isGoogleLoading
@@ -435,7 +358,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: Colors.grey.shade300,
+                          color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300,
                           width: 0.5,
                         ),
                       ),
@@ -452,10 +375,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   // Centered text
-                  const Text(
+                  Text(
                     'Tiếp tục với Google',
                     style: TextStyle(
-                      color: Color(0xFF2C2C2C),
+                      color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
