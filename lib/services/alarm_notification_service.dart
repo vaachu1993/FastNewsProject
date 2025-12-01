@@ -6,7 +6,6 @@ import 'package:xml/xml.dart';
 import 'dart:convert';
 import 'dart:ui';
 import '../models/article_model.dart';
-import 'notification_handler.dart';
 
 /// Service sử dụng Android Alarm Manager Plus để chạy background task
 /// ngay cả khi app đã tắt hoàn toàn
@@ -259,15 +258,10 @@ class AlarmNotificationService {
   static Future<void> _showNotification(ArticleModel article) async {
     final FlutterLocalNotificationsPlugin notifications = FlutterLocalNotificationsPlugin();
 
-    // Initialize with callback handler
+    // Initialize if needed
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidSettings);
-
-    // Initialize với NotificationHandler để handle notification tap globally
-    await notifications.initialize(
-      initSettings,
-      onDidReceiveNotificationResponse: NotificationHandler.handleNotificationTap,
-    );
+    await notifications.initialize(initSettings);
 
     // Create notification channel - Đồng nhất với NotificationService
     const androidChannel = AndroidNotificationChannel(
