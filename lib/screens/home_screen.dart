@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/notification_history_service.dart';
 import '../screens/notification_history_screen.dart';
+import '../screens/view_all_articles_screen.dart';
 import '../utils/app_localizations.dart';
 import '../widgets/localization_provider.dart';
 
@@ -380,7 +381,20 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ViewAllArticlesScreen(
+                                      category: categories[selectedCategory],
+                                      title: currentLanguage == 'vi'
+                                          ? 'Tin nổi bật - ${_translateCategory(categories[selectedCategory], currentLanguage)}'
+                                          : 'Featured News - ${_translateCategory(categories[selectedCategory], currentLanguage)}',
+                                      favoriteTopics: userFavoriteTopics.isNotEmpty ? userFavoriteTopics : null,
+                                    ),
+                                  ),
+                                );
+                              },
                               child: Text(
                                 loc.translate('view_all'),
                                 style: const TextStyle(color: Colors.green),
@@ -624,7 +638,18 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ViewAllArticlesScreen(
+                                      category: 'Tất cả',
+                                      title: loc.translate('global_news'),
+                                      favoriteTopics: userFavoriteTopics.isNotEmpty ? userFavoriteTopics : null,
+                                    ),
+                                  ),
+                                );
+                              },
                               child: Text(
                                 loc.translate('view_all'),
                                 style: const TextStyle(color: Colors.green),

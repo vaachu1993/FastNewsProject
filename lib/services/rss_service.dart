@@ -5,6 +5,7 @@ import 'package:xml/xml.dart';
 import '../models/article_model.dart';
 import '../utils/html_utils.dart';
 import '../services/notification_service.dart';
+import '../utils/content_deduplication.dart';
 
 class RssService {
   static final List<String> rssUrls = [
@@ -60,6 +61,10 @@ class RssService {
     for (var articles in results) {
       allArticles.addAll(articles);
     }
+
+    // 🔥 Loại bỏ các bài viết trùng lặp dựa trên nội dung
+    allArticles = ContentDeduplication.removeDuplicates(allArticles);
+    print("✅ Sau khi loại bỏ trùng lặp: ${allArticles.length} bài viết");
 
     // ✅ Check and notify about new articles
     if (allArticles.isNotEmpty) {
@@ -176,6 +181,10 @@ class RssService {
       allArticles.addAll(articles);
     }
 
+    // 🔥 Loại bỏ các bài viết trùng lặp dựa trên nội dung
+    allArticles = ContentDeduplication.removeDuplicates(allArticles);
+    print("✅ Category '$category' sau khi loại bỏ trùng lặp: ${allArticles.length} bài viết");
+
     // ⚡ Lưu vào cache
     _cache[category] = allArticles;
     _cacheTimestamp[category] = DateTime.now();
@@ -198,6 +207,34 @@ class RssService {
     }).toList();
   }
 
+  // 📊 Thống kê và phân tích bài viết trùng lặp
+  static Map<String, dynamic> analyzeArticleDuplicates(List<ArticleModel> articles) {
+    if (articles.isEmpty) {
+      return {'total': 0, 'unique': 0, 'duplicates': 0, 'groups': []};
+    }
+
+    final groups = ContentDeduplication.groupSimilarArticles(articles);
+    final duplicateGroups = groups.where((group) => group.length > 1).toList();
+
+    int totalDuplicates = 0;
+    for (var group in duplicateGroups) {
+      totalDuplicates += (group.length - 1); // Trừ đi 1 bài gốc
+    }
+
+    return {
+      'total': articles.length,
+      'unique': groups.length,
+      'duplicates': totalDuplicates,
+      'duplicateGroups': duplicateGroups.length,
+      'groups': duplicateGroups.map((group) {
+        return {
+          'count': group.length,
+          'titles': group.map((a) => '${a.source}: ${a.title}').toList(),
+        };
+      }).toList(),
+    };
+  }
+
   // Lấy tin tức ngẫu nhiên hoặc mới nhất - TỐI ƯU
   static Future<List<ArticleModel>> fetchRandomNews() async {
     // ⚡ LOAD SONG SONG tất cả RSS feeds
@@ -208,6 +245,9 @@ class RssService {
     for (var articles in results) {
       allArticles.addAll(articles);
     }
+
+    // 🔥 Loại bỏ các bài viết trùng lặp dựa trên nội dung
+    allArticles = ContentDeduplication.removeDuplicates(allArticles);
 
     // Shuffle lại toàn bộ danh sách
     allArticles.shuffle(Random());
