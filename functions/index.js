@@ -5,25 +5,55 @@ const xml2js = require('xml2js');
 
 admin.initializeApp();
 
-// RSS Feed URLs
+// RSS Feed URLs - Giống với app (3 nguồn: VnExpress, Tuổi Trẻ, Thanh Niên)
 const RSS_FEEDS = {
-  'all_users': 'https://vnexpress.net/rss/tin-moi-nhat.rss',
-  'chinh_tri': 'https://vnexpress.net/rss/thoi-su.rss',
-  'kinh_te': 'https://vnexpress.net/rss/kinh-doanh.rss',
-  'the_gioi': 'https://vnexpress.net/rss/the-gioi.rss',
-  'the_thao': 'https://vnexpress.net/rss/the-thao.rss',
-  'cong_nghe': 'https://vnexpress.net/rss/so-hoa.rss',
-  'giai_tri': 'https://vnexpress.net/rss/giai-tri.rss',
-  'suc_khoe': 'https://vnexpress.net/rss/suc-khoe.rss',
-  'du_lich': 'https://vnexpress.net/rss/du-lich.rss',
+  'all_users': [
+    'https://vnexpress.net/rss/tin-moi-nhat.rss',
+    'https://tuoitre.vn/rss/tin-moi-nhat.rss',
+    'https://thanhnien.vn/rss/home.rss',
+  ],
+  'the_thao': [
+    'https://vnexpress.net/rss/the-thao.rss',
+    'https://tuoitre.vn/rss/the-thao.rss',
+    'https://thanhnien.vn/rss/the-thao.rss',
+  ],
+  'cong_nghe': [
+    'https://vnexpress.net/rss/so-hoa.rss',
+    'https://tuoitre.vn/rss/nhip-song-so.rss',
+    'https://thanhnien.vn/rss/cong-nghe.rss',
+  ],
+  'kinh_te': [
+    'https://vnexpress.net/rss/kinh-doanh.rss',
+    'https://tuoitre.vn/rss/kinh-doanh.rss',
+    'https://thanhnien.vn/rss/kinh-te.rss',
+  ],
+  'chinh_tri': [
+    'https://vnexpress.net/rss/thoi-su.rss',
+    'https://tuoitre.vn/rss/thoi-su.rss',
+    'https://thanhnien.vn/rss/thoi-su.rss',
+  ],
+  'suc_khoe': [
+    'https://vnexpress.net/rss/suc-khoe.rss',
+    'https://tuoitre.vn/rss/suc-khoe.rss',
+    'https://thanhnien.vn/rss/suc-khoe.rss',
+  ],
+  'giai_tri': [
+    'https://vnexpress.net/rss/giai-tri.rss',
+  ],
+  'the_gioi': [
+    'https://vnexpress.net/rss/the-gioi.rss',
+  ],
+  'du_lich': [
+    'https://vnexpress.net/rss/du-lich.rss',
+  ],
 };
 
 /**
  * Cloud Function: Kiểm tra tin tức mới và gửi notification
- * Chạy mỗi 1 giờ
+ * Chạy mỗi 2 giờ
  */
 exports.checkNewArticles = functions.pubsub
-  .schedule('every 1 hours')
+  .schedule('every 2 hours')
   .timeZone('Asia/Ho_Chi_Minh')
   .onRun(async (context) => {
     console.log('🔍 Starting news check at:', new Date().toISOString());
@@ -51,6 +81,17 @@ exports.checkNewArticles = functions.pubsub
         return null;
       }
 
+      // Tạo article object đầy đủ để có thể navigate vào trang chi tiết
+      const articleData = {
+        id: generateArticleId(latestArticle.link),
+        title: latestArticle.title,
+        link: latestArticle.link,
+        description: latestArticle.description || '',
+        imageUrl: extractImageUrl(latestArticle.description) || '',
+        time: latestArticle.pubDate || new Date().toISOString(),
+        source: latestArticle.source || 'Tin tức',
+      };
+
       // Gửi notification đến tất cả users
       const message = {
         notification: {
@@ -58,9 +99,8 @@ exports.checkNewArticles = functions.pubsub
           body: latestArticle.title,
         },
         data: {
-          articleUrl: latestArticle.link,
-          articleTitle: latestArticle.title,
-          source: 'VnExpress',
+          // Gửi toàn bộ article dưới dạng JSON string
+          article: JSON.stringify(articleData),
           click_action: 'FLUTTER_NOTIFICATION_CLICK',
         },
         topic: 'all_users',
@@ -116,6 +156,17 @@ exports.checkNewArticlesByCategory = functions.pubsub
           continue;
         }
 
+        // Tạo article object đầy đủ
+        const articleData = {
+          id: generateArticleId(latestArticle.link),
+          title: latestArticle.title,
+          link: latestArticle.link,
+          description: latestArticle.description || '',
+          imageUrl: extractImageUrl(latestArticle.description) || '',
+          time: latestArticle.pubDate || new Date().toISOString(),
+          source: latestArticle.source || 'Tin tức',
+        };
+
         // Gửi notification
         const message = {
           notification: {
@@ -123,9 +174,9 @@ exports.checkNewArticlesByCategory = functions.pubsub
             body: latestArticle.title,
           },
           data: {
-            articleUrl: latestArticle.link,
-            articleTitle: latestArticle.title,
-            category: topic,
+            // Gửi toàn bộ article dưới dạng JSON string
+            article: JSON.stringify(articleData),
+            click_action: 'FLUTTER_NOTIFICATION_CLICK',
           },
           topic: topic,
         };
@@ -149,27 +200,70 @@ exports.checkNewArticlesByCategory = functions.pubsub
   });
 
 /**
- * Fetch articles from RSS feed
+ * Fetch articles from RSS feed (hỗ trợ cả single URL và array of URLs)
  */
-async function fetchLatestArticles(rssUrl) {
-  try {
-    const response = await fetch(rssUrl);
-    const xml = await response.text();
-    const result = await xml2js.parseStringPromise(xml);
+async function fetchLatestArticles(rssUrlOrArray) {
+  const urls = Array.isArray(rssUrlOrArray) ? rssUrlOrArray : [rssUrlOrArray];
+  const allArticles = [];
 
-    const items = result.rss.channel[0].item || [];
-    const articles = items.slice(0, 5).map(item => ({
-      title: item.title[0],
-      link: item.link[0],
-      description: item.description ? item.description[0] : '',
-      pubDate: item.pubDate ? item.pubDate[0] : '',
-    }));
+  for (const rssUrl of urls) {
+    try {
+      const response = await fetch(rssUrl);
+      const xml = await response.text();
+      const result = await xml2js.parseStringPromise(xml);
 
-    return articles;
-  } catch (error) {
-    console.error('❌ Error fetching RSS:', error);
-    return [];
+      const items = result.rss.channel[0].item || [];
+      const articles = items.slice(0, 5).map(item => ({
+        title: item.title[0],
+        link: item.link[0],
+        description: item.description ? item.description[0] : '',
+        pubDate: item.pubDate ? item.pubDate[0] : '',
+        source: detectSource(rssUrl),
+      }));
+
+      allArticles.push(...articles);
+    } catch (error) {
+      console.error(`❌ Error fetching RSS from ${rssUrl}:`, error);
+    }
   }
+
+  // Sort by pubDate (newest first)
+  allArticles.sort((a, b) => {
+    const dateA = new Date(a.pubDate || 0);
+    const dateB = new Date(b.pubDate || 0);
+    return dateB - dateA;
+  });
+
+  return allArticles;
+}
+
+/**
+ * Detect source from RSS URL
+ */
+function detectSource(url) {
+  if (url.includes('vnexpress')) return 'VNExpress';
+  if (url.includes('tuoitre')) return 'Tuổi Trẻ';
+  if (url.includes('thanhnien')) return 'Thanh Niên';
+  return 'Tin tức';
+}
+
+/**
+ * Generate article ID from link (same as Flutter app)
+ */
+function generateArticleId(link) {
+  const crypto = require('crypto');
+  return crypto.createHash('sha256').update(link).digest('hex').substring(0, 16);
+}
+
+/**
+ * Extract image URL from description HTML
+ */
+function extractImageUrl(description) {
+  if (!description) return '';
+
+  const imgRegex = /<img[^>]+src="([^">]+)"/i;
+  const match = description.match(imgRegex);
+  return match ? match[1] : '';
 }
 
 /**
