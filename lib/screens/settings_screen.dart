@@ -125,6 +125,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           _buildSimpleDivider(),
 
+          // Test Notification Button
+          _buildSimpleListTile(
+            icon: Icons.bug_report_outlined,
+            title: currentLanguage == 'vi' ? 'Test Thông Báo' : 'Test Notification',
+            subtitle: currentLanguage == 'vi'
+              ? 'Gửi thông báo thử nghiệm'
+              : 'Send a test notification',
+            onTap: () async {
+              await _notificationService.testNotification();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      currentLanguage == 'vi'
+                        ? '🧪 Đã gửi thông báo test! Hãy tap vào thông báo để kiểm tra.'
+                        : '🧪 Test notification sent! Tap on it to check.',
+                    ),
+                    backgroundColor: Colors.blue,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+          ),
+
+          _buildSimpleDivider(),
+
           // Dark Mode
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {
@@ -201,6 +228,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSimpleListTile({
     required IconData icon,
     required String title,
+    String? subtitle,
     required VoidCallback onTap,
   }) {
     return ListTile(
@@ -218,6 +246,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           fontWeight: FontWeight.w400,
         ),
       ),
+      subtitle: subtitle != null ? Text(
+        subtitle,
+        style: TextStyle(
+          color: Theme.of(context).textTheme.bodySmall?.color,
+          fontSize: 13,
+        ),
+      ) : null,
       trailing: Icon(
         Icons.chevron_right,
         color: Theme.of(context).textTheme.bodySmall?.color,

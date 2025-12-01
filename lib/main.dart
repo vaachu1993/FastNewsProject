@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -9,6 +10,7 @@ import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'services/notification_service.dart';
+import 'services/notification_handler.dart';
 import 'services/fcm_service.dart';
 import 'services/auth_service.dart';
 import 'services/localization_service.dart';
@@ -21,8 +23,35 @@ import 'dart:convert';
 // Global navigator key for navigation from notifications
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+// Method channel for notification handling from native side
+const platform = MethodChannel('com.example.fastnews/notification');
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Setup method channel handler for notifications from MainActivity
+  platform.setMethodCallHandler((call) async {
+    print('📱📱📱 Method channel call received: ${call.method}');
+
+    if (call.method == 'onNotificationTapped') {
+      final String payload = call.arguments as String;
+      print('🔔🔔🔔 NOTIFICATION TAPPED VIA METHOD CHANNEL!');
+      final previewLength = payload.length > 50 ? 50 : payload.length;
+      print('📦 Payload: ${payload.substring(0, previewLength)}...');
+
+      try {
+        final articleData = jsonDecode(payload);
+        final article = ArticleModel.fromJson(articleData);
+        print('✅ Article parsed: ${article.title}');
+
+        // Navigate with retry
+        _navigateToArticle(article);
+      } catch (e, stackTrace) {
+        print('❌ Error parsing notification: $e');
+        print('Stack trace: $stackTrace');
+      }
+    }
+  });
 
   // Load environment variables từ .env file
   await dotenv.load(fileName: ".env");
@@ -60,24 +89,38 @@ void main() async {
   await fcmService.initialize();
   print('🔥 Firebase Cloud Messaging initialized');
 
-  // Setup notification tap handler
-  NotificationService.onNotificationTap = (String articleJson) {
-    try {
-      final articleData = jsonDecode(articleJson);
-      final article = ArticleModel.fromJson(articleData);
 
-      // Navigate to article detail screen
-      navigatorKey.currentState?.push(
+  runApp(const FastNewsApp());
+}
+
+// Navigate to article with retry logic
+void _navigateToArticle(ArticleModel article, {int retryCount = 0}) async {
+  const maxRetries = 10;
+  const retryDelay = Duration(milliseconds: 500);
+
+  print('🔄 Navigation attempt ${retryCount + 1}/$maxRetries');
+
+  if (navigatorKey.currentState != null && navigatorKey.currentContext != null) {
+    try {
+      await navigatorKey.currentState!.push(
         MaterialPageRoute(
           builder: (context) => ArticleDetailScreen(article: article),
         ),
       );
+      print('✅ Successfully navigated to article detail screen');
+      print('📰 Article: ${article.title}');
     } catch (e) {
-      print('❌ Error handling notification tap: $e');
+      print('❌ Navigation error: $e');
     }
-  };
-
-  runApp(const FastNewsApp());
+  } else {
+    if (retryCount < maxRetries) {
+      print('⏳ Navigator not ready, waiting... (attempt ${retryCount + 1}/$maxRetries)');
+      await Future.delayed(retryDelay);
+      _navigateToArticle(article, retryCount: retryCount + 1);
+    } else {
+      print('❌ Failed to navigate after $maxRetries attempts');
+    }
+  }
 }
 
 class FastNewsApp extends StatefulWidget {
