@@ -217,7 +217,59 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
+  // Test notification with a sample article
+  Future<void> testNotification() async {
+    print('');
+    print('🧪🧪🧪 ========================================');
+    print('🧪 TEST NOTIFICATION STARTED');
+    print('🧪🧪🧪 ========================================');
+    print('');
 
+    // Check pending notifications first
+    final pendingNotifications = await _notifications.pendingNotificationRequests();
+    print('📋 Current pending notifications: ${pendingNotifications.length}');
+
+    // Check active notifications
+    final activeNotifications = await _notifications.getActiveNotifications();
+    print('📋 Current active notifications: ${activeNotifications.length}');
+    print('');
+
+    // Create a test article with proper parameters
+    final testArticle = ArticleModel(
+      id: 'test_${DateTime.now().millisecondsSinceEpoch}',
+      title: '🧪 Thông báo Test - Tap vào để xem chi tiết',
+      description: 'Đây là thông báo thử nghiệm. Nếu bạn thấy màn hình chi tiết bài viết sau khi tap vào thông báo này, tức là chức năng đã hoạt động tốt! ✅',
+      link: 'https://example.com/test-article',
+      imageUrl: 'https://via.placeholder.com/400x250.png?text=Test+Article',
+      time: DateTime.now().toString(),
+      source: 'FastNews Test',
+    );
+
+    print('📋 Test article created:');
+    print('   - ID: ${testArticle.id}');
+    print('   - Title: ${testArticle.title}');
+    print('   - Link: ${testArticle.link}');
+    print('');
+
+    try {
+      await showNewArticleNotification(testArticle);
+
+      // Wait a bit then check again
+      await Future.delayed(const Duration(milliseconds: 500));
+      final afterNotifications = await _notifications.getActiveNotifications();
+      print('📋 Active notifications after sending: ${afterNotifications.length}');
+
+      print('');
+      print('✅✅✅ Test notification sent successfully!');
+      print('📱 Swipe down to check your notification tray');
+      print('👆 TAP on the notification');
+      print('🔔 You should see logs starting with "🔔🔔🔔"');
+      print('');
+    } catch (e, stackTrace) {
+      print('❌ Error sending test notification: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
 
   // Dispose resources
   void dispose() {
