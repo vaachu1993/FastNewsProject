@@ -23,6 +23,7 @@ class _MainScreenState extends State<MainScreen> {
   final _authService = AuthService();
   int mucHienTai = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<HomeScreenState> _homeScreenKey = GlobalKey<HomeScreenState>();
 
   // Add user data
   User? _currentUser;
@@ -98,6 +99,12 @@ class _MainScreenState extends State<MainScreen> {
 
     // Save to Firestore
     await _saveSelectedTopics();
+
+    // 🎯 Trigger reload HomeScreen với animation
+    if (mucHienTai == 0) {
+      // Nếu đang ở HomeScreen, reload ngay
+      _homeScreenKey.currentState?.reloadWithAnimation();
+    }
   }
 
   Future<void> _saveSelectedTopics() async {
@@ -128,7 +135,7 @@ class _MainScreenState extends State<MainScreen> {
     // Create pages with keys based on language to force rebuild when language changes
     final pages = [
       HomeScreen(
-        key: ValueKey('home_$currentLanguage'),
+        key: _homeScreenKey, // Use GlobalKey để access state
         onNavigateToProfile: () {
           setState(() => mucHienTai = 3);
         },

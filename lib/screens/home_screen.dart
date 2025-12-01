@@ -13,14 +13,20 @@ import '../widgets/localization_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToProfile;
+  final VoidCallback? onTopicsChanged; // Callback khi topics thay đổi
 
-  const HomeScreen({super.key, this.onNavigateToProfile});
+  const HomeScreen({
+    super.key,
+    this.onNavigateToProfile,
+    this.onTopicsChanged,
+  });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+// Export state để MainScreen có thể access
+class HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   final _authService = AuthService();
   final _firestoreService = FirestoreService();
@@ -127,6 +133,22 @@ class _HomeScreenState extends State<HomeScreen>
     } catch (e) {
       print('❌ Error loading user favorite topics: $e');
     }
+  }
+
+  // Public method để reload từ bên ngoài (khi topics thay đổi)
+  Future<void> reloadWithAnimation() async {
+    if (!mounted) return;
+
+    // Reload favorite topics trước
+    await _loadUserFavoriteTopics();
+
+    // Sau đó reload news với animation
+    setState(() {
+      selectedCategory = 0;
+      isLoading = true;
+    });
+
+    await _loadNews(isInitial: true);
   }
 
   @override

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fastnews/services/auth_service.dart';
 import 'package:fastnews/services/otp_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 import 'login_screen.dart';
 import 'otp_verification_screen.dart';
 
@@ -123,8 +125,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -142,12 +147,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: 20),
 
                   // App Name
-                  const Text(
+                  Text(
                     'FastNews',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C2C2C),
+                      color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -155,11 +160,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: 16),
 
                   // Welcome Text
-                  const Text(
+                  Text(
                     "Tạo tài khoản để bắt đầu!",
                     style: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF808080),
+                      color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF808080),
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
@@ -210,7 +215,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        color: const Color(0xFF808080),
+                        color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF808080),
                       ),
                       onPressed: () {
                         setState(() {
@@ -270,10 +275,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         "Đã có tài khoản?  ",
                         style: TextStyle(
-                          color: Color(0xFF2C2C2C),
+                          color: isDarkMode ? Colors.grey.shade300 : const Color(0xFF2C2C2C),
                           fontSize: 14,
                         ),
                       ),
@@ -379,21 +384,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
     Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isDarkMode = themeProvider.isDarkMode;
+
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
       validator: validator,
+      style: TextStyle(
+        color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
+      ),
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(
-          color: Color(0xFFB0B0B0),
+        hintStyle: TextStyle(
+          color: isDarkMode ? Colors.grey.shade500 : const Color(0xFFB0B0B0),
           fontSize: 15,
         ),
-        prefixIcon: Icon(icon, color: const Color(0xFF808080)),
+        prefixIcon: Icon(
+          icon,
+          color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF808080),
+        ),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: const Color(0xFFF8F8F8),
+        fillColor: isDarkMode
+            ? const Color(0xFF2A2740)
+            : const Color(0xFFF8F8F8),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(28),
           borderSide: BorderSide.none,
