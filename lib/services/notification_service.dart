@@ -93,7 +93,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@mipmap/logo_app',
       color: Color(0xFF5A7D3C),
     );
 
