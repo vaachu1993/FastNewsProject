@@ -51,6 +51,7 @@ dependencies:
   # State management & Storage
   provider: ^6.1.1
   shared_preferences: ^2.2.2
+  timeago: ^3.7.0
 
   # Email & OTP
   mailer: ^6.0.1

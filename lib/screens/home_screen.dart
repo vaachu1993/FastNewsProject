@@ -5,6 +5,8 @@ import '../widgets/article_card_horizontal.dart';
 import '../services/rss_service.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/notification_history_service.dart';
+import '../screens/notification_history_screen.dart';
 import '../utils/app_localizations.dart';
 import '../widgets/localization_provider.dart';
 
@@ -35,6 +37,9 @@ class _HomeScreenState extends State<HomeScreen>
   // Track language to reload on change
   String? _previousLanguage;
 
+  // Notification badge
+  int _unreadNotificationCount = 0;
+
   final List<String> categories = RssService.getCategories();
 
   @override
@@ -57,9 +62,20 @@ class _HomeScreenState extends State<HomeScreen>
     // Load user data and favorite topics FIRST
     await _loadUserData();
     await _loadUserFavoriteTopics();
+    await _loadUnreadNotificationCount();
 
     // Then load news based on favorite topics
     await _loadNews(isInitial: true);
+  }
+
+  Future<void> _loadUnreadNotificationCount() async {
+    final historyService = NotificationHistoryService();
+    final count = await historyService.getUnreadCount();
+    if (mounted) {
+      setState(() {
+        _unreadNotificationCount = count;
+      });
+    }
   }
 
   @override
@@ -242,11 +258,57 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
         actions: [
-          Icon(
-            Icons.notifications_outlined,
-            color: Theme.of(context).iconTheme.color,
+          // Notification icon with badge
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.notifications_outlined,
+                  color: Theme.of(context).iconTheme.color,
+                ),
+                onPressed: () async {
+                  // Navigate to notification history
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationHistoryScreen(),
+                    ),
+                  );
+                  // Reload unread count after returning
+                  _loadUnreadNotificationCount();
+                },
+              ),
+              if (_unreadNotificationCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      _unreadNotificationCount > 99
+                          ? '99+'
+                          : _unreadNotificationCount.toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(width: 10),
           GestureDetector(
             onTap: () {
               // Navigate to profile screen using callback

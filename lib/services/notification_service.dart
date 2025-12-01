@@ -1,10 +1,12 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/article_model.dart';
+import '../models/notification_history_model.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'alarm_notification_service.dart';
+import 'notification_history_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -86,6 +88,23 @@ class NotificationService {
 
   // Show notification for new article
   Future<void> showNewArticleNotification(ArticleModel article) async {
+    // Kiểm tra xem bài báo đã được thông báo chưa
+    final historyService = NotificationHistoryService();
+    final history = await historyService.getNotificationHistory();
+
+    // Check if article already exists in history
+    final alreadyNotified = history.any((notification) =>
+      notification.articleId == article.id ||
+      notification.articleLink == article.link
+    );
+
+    if (alreadyNotified) {
+      print('⏭️ Bài báo đã được thông báo trước đó, bỏ qua: ${article.title}');
+      return; // Không gửi notification nếu đã có trong lịch sử
+    }
+
+    print('📤 Gửi thông báo mới: ${article.title}');
+
     const androidDetails = AndroidNotificationDetails(
       'news_channel',
       'Tin tức mới',
@@ -118,6 +137,23 @@ class NotificationService {
       details,
       payload: articleJson,
     );
+
+    // Lưu vào lịch sử thông báo
+    final historyItem = NotificationHistoryModel(
+      id: article.id,
+      title: article.title,
+      body: (article.description != null && article.description!.isNotEmpty)
+          ? article.description!
+          : article.title,
+      articleId: article.id,
+      articleLink: article.link,
+      imageUrl: article.imageUrl,
+      source: article.source,
+      timestamp: DateTime.now(),
+      isRead: false,
+    );
+    await historyService.saveNotification(historyItem);
+    print('✅ Đã lưu vào lịch sử thông báo');
   }
 
   // Check and notify about new articles

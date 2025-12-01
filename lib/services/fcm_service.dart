@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import '../models/article_model.dart';
 
 /// Service xử lý Firebase Cloud Messaging (FCM)
 /// Nhận push notification từ Firebase Cloud Functions
@@ -205,12 +206,34 @@ class FCMService {
 
   /// Handle notification tap
   void _handleNotificationTap(RemoteMessage message) {
-    print('🎯 Handling notification tap');
+    print('🎯 Handling notification tap from FCM');
     print('📦 Data: ${message.data}');
 
-    // TODO: Navigate to article detail screen
-    // You can use message.data to get article info
-    // Example: message.data['articleUrl'], message.data['articleId']
+    try {
+      // Check if article data exists
+      if (message.data.containsKey('article')) {
+        final articleJson = message.data['article'];
+        print('📰 Article JSON received: ${articleJson?.substring(0, 50)}...');
+
+        // Parse article data
+        final articleData = jsonDecode(articleJson!);
+        final article = ArticleModel.fromJson(articleData);
+
+        print('✅ Article parsed: ${article.title}');
+
+        // Navigate to article detail using method channel
+        // (MainActivity will handle this via Method Channel)
+        // Or use navigatorKey if available
+
+        // For now, just log - actual navigation will be handled by MainActivity
+        print('🔗 Article link: ${article.link}');
+      } else {
+        print('⚠️ No article data in FCM message');
+      }
+    } catch (e, stackTrace) {
+      print('❌ Error handling FCM notification tap: $e');
+      print('Stack trace: $stackTrace');
+    }
   }
 }
 
