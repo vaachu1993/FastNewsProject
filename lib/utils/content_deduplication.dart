@@ -3,8 +3,10 @@ import '../models/article_model.dart';
 /// Utility class for detecting and removing duplicate articles based on content similarity
 class ContentDeduplication {
   /// Ngưỡng độ tương đồng để coi là trùng lặp (0.0 - 1.0)
-  /// 0.7 = 70% tương đồng
-  static const double SIMILARITY_THRESHOLD = 0.70;
+  /// 0.50 = 50% tương đồng
+  /// Giảm xuống 0.50 để bắt được các bài viết cùng sự kiện nhưng viết lại khác nhau
+  /// (Với trọng số 20% tiêu đề - 80% nội dung, ưu tiên phát hiện nội dung giống nhau)
+  static const double SIMILARITY_THRESHOLD = 0.50;
 
   /// Loại bỏ các bài viết trùng lặp dựa trên độ tương đồng nội dung
   /// [threshold] - Ngưỡng độ tương đồng (mặc định 0.70 = 70%)
@@ -15,8 +17,11 @@ class ContentDeduplication {
     if (articles.length <= 1) return articles;
 
     final similarityThreshold = threshold ?? SIMILARITY_THRESHOLD;
+    print("🔍 [DEDUP] Bắt đầu lọc ${articles.length} bài viết với ngưỡng $similarityThreshold");
+
     List<ArticleModel> uniqueArticles = [];
     Set<int> processedIndices = {};
+    int duplicatesFound = 0;
 
     for (int i = 0; i < articles.length; i++) {
       if (processedIndices.contains(i)) continue;
@@ -34,17 +39,28 @@ class ContentDeduplication {
         );
 
         if (similarity >= similarityThreshold) {
+          print("   ⚠️  Tìm thấy bài trùng (${(similarity * 100).toStringAsFixed(1)}%):");
+          print("      📰 [${currentArticle.source}] ${currentArticle.title.substring(0, currentArticle.title.length > 50 ? 50 : currentArticle.title.length)}...");
+          print("      📰 [${articles[j].source}] ${articles[j].title.substring(0, articles[j].title.length > 50 ? 50 : articles[j].title.length)}...");
+
           similarArticles.add(articles[j]);
           processedIndices.add(j);
+          duplicatesFound++;
         }
       }
 
       // Chọn bài viết tốt nhất từ nhóm tương tự
-      ArticleModel bestArticle = _selectBestArticle(similarArticles);
-      uniqueArticles.add(bestArticle);
+      if (similarArticles.length > 1) {
+        ArticleModel bestArticle = _selectBestArticle(similarArticles);
+        print("   ✅ Chọn bài tốt nhất: [${bestArticle.source}] ${bestArticle.title.substring(0, bestArticle.title.length > 50 ? 50 : bestArticle.title.length)}...");
+        uniqueArticles.add(bestArticle);
+      } else {
+        uniqueArticles.add(currentArticle);
+      }
       processedIndices.add(i);
     }
 
+    print("✅ [DEDUP] Kết quả: ${articles.length} bài → ${uniqueArticles.length} bài (đã loại bỏ $duplicatesFound bài trùng)");
     return uniqueArticles;
   }
 
@@ -53,23 +69,33 @@ class ContentDeduplication {
     // Nếu cùng link => 100% trùng
     if (article1.link == article2.link) return 1.0;
 
-    // Tính độ tương đồng tiêu đề (30% trọng số)
+    // Tính độ tương đồng tiêu đề (20% trọng số)
     double titleSimilarity = _calculateTextSimilarity(
       _normalizeText(article1.title),
       _normalizeText(article2.title),
     );
 
-    // Tính độ tương đồng mô tả (70% trọng số)
+    // Tính độ tương đồng mô tả (80% trọng số)
     double descriptionSimilarity = 0.0;
-    if (article1.description != null && article2.description != null) {
+    if (article1.description != null &&
+        article2.description != null &&
+        article1.description!.isNotEmpty &&
+        article2.description!.isNotEmpty) {
       descriptionSimilarity = _calculateTextSimilarity(
         _normalizeText(article1.description!),
         _normalizeText(article2.description!),
       );
     }
 
-    // Trọng số: 30% tiêu đề, 70% nội dung
-    return (titleSimilarity * 0.3) + (descriptionSimilarity * 0.7);
+    // Trọng số: 20% tiêu đề, 80% nội dung (ưu tiên nội dung để phát hiện trùng lặp tốt hơn)
+    final similarity = (titleSimilarity * 0.2) + (descriptionSimilarity * 0.8);
+
+    // Debug logging cho các cặp có độ tương đồng cao
+    if (similarity >= SIMILARITY_THRESHOLD - 0.1) {
+      print("      🔍 Độ tương đồng: ${(similarity * 100).toStringAsFixed(1)}% (Tiêu đề: ${(titleSimilarity * 100).toStringAsFixed(1)}%, Nội dung: ${(descriptionSimilarity * 100).toStringAsFixed(1)}%)");
+    }
+
+    return similarity;
   }
 
   /// Chuẩn hóa văn bản để so sánh

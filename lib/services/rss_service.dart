@@ -63,8 +63,14 @@ class RssService {
     }
 
     // 🔥 Loại bỏ các bài viết trùng lặp dựa trên nội dung
+    print("\n📊 Trước khi lọc trùng lặp: ${allArticles.length} bài viết");
+
+    // Kiểm tra description
+    int articlesWithDesc = allArticles.where((a) => a.description != null && a.description!.isNotEmpty).length;
+    print("   📝 Số bài có description: $articlesWithDesc/${allArticles.length}");
+
     allArticles = ContentDeduplication.removeDuplicates(allArticles);
-    print("✅ Sau khi loại bỏ trùng lặp: ${allArticles.length} bài viết");
+    print("✅ Sau khi loại bỏ trùng lặp: ${allArticles.length} bài viết\n");
 
     // ✅ Check and notify about new articles
     if (allArticles.isNotEmpty) {
@@ -182,8 +188,12 @@ class RssService {
     }
 
     // 🔥 Loại bỏ các bài viết trùng lặp dựa trên nội dung
+    print("\n📊 Category '$category' - Trước khi lọc: ${allArticles.length} bài viết");
+    int articlesWithDesc = allArticles.where((a) => a.description != null && a.description!.isNotEmpty).length;
+    print("   📝 Số bài có description: $articlesWithDesc/${allArticles.length}");
+
     allArticles = ContentDeduplication.removeDuplicates(allArticles);
-    print("✅ Category '$category' sau khi loại bỏ trùng lặp: ${allArticles.length} bài viết");
+    print("✅ Category '$category' sau khi loại bỏ trùng lặp: ${allArticles.length} bài viết\n");
 
     // ⚡ Lưu vào cache
     _cache[category] = allArticles;
@@ -247,7 +257,12 @@ class RssService {
     }
 
     // 🔥 Loại bỏ các bài viết trùng lặp dựa trên nội dung
+    print("\n📊 Random News - Trước khi lọc: ${allArticles.length} bài viết");
+    int articlesWithDesc = allArticles.where((a) => a.description != null && a.description!.isNotEmpty).length;
+    print("   📝 Số bài có description: $articlesWithDesc/${allArticles.length}");
+
     allArticles = ContentDeduplication.removeDuplicates(allArticles);
+    print("✅ Random News sau khi loại bỏ trùng lặp: ${allArticles.length} bài viết\n");
 
     // Shuffle lại toàn bộ danh sách
     allArticles.shuffle(Random());
