@@ -430,6 +430,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
           borderRadius: BorderRadius.circular(28),
           borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
+        errorStyle: TextStyle(
+          color: isDarkMode ? Colors.red.shade300 : Colors.red.shade700,
+          fontSize: 12,
+        ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       ),
     );

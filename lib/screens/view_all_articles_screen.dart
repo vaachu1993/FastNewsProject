@@ -84,9 +84,14 @@ class _ViewAllArticlesScreenState extends State<ViewAllArticlesScreen> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
+        final localizationProvider = LocalizationProvider.of(context);
+        final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Lỗi tải tin tức: $e'),
+            content: Text(currentLanguage == 'vi'
+              ? 'Lỗi tải tin tức: $e'
+              : 'Error loading news: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -271,7 +276,9 @@ class _ViewAllArticlesScreenState extends State<ViewAllArticlesScreen> {
                                             : 'Loading more...',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade600,
+                                          color: Theme.of(context).brightness == Brightness.dark
+                                              ? Colors.grey.shade400
+                                              : Colors.grey.shade600,
                                         ),
                                       ),
                                     ],
@@ -313,6 +320,8 @@ class _ViewAllArticlesScreenState extends State<ViewAllArticlesScreen> {
   }
 
   Widget _buildEmptyState(AppLocalizations loc) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -322,7 +331,7 @@ class _ViewAllArticlesScreenState extends State<ViewAllArticlesScreen> {
             Icon(
               Icons.article_outlined,
               size: 80,
-              color: Colors.grey.shade400,
+              color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade400,
             ),
             const SizedBox(height: 16),
             Text(
@@ -331,7 +340,7 @@ class _ViewAllArticlesScreenState extends State<ViewAllArticlesScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade600,
+                color: isDarkMode ? Colors.grey.shade300 : Colors.grey.shade600,
               ),
             ),
             const SizedBox(height: 8),
@@ -340,7 +349,7 @@ class _ViewAllArticlesScreenState extends State<ViewAllArticlesScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade500,
+                color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade500,
               ),
             ),
             const SizedBox(height: 24),
