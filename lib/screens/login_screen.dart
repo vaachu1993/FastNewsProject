@@ -352,26 +352,36 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Icon positioned on the left
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300,
-                          width: 0.5,
-                        ),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'G',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4285F4),
+                    child: Image.asset(
+                      'assets/images/google_logo.png',
+                      width: 28,
+                      height: 28,
+                      filterQuality: FilterQuality.high,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback nếu không tìm thấy hình
+                        return Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isDarkMode ? Colors.grey.shade600 : Colors.grey.shade300,
+                              width: 0.5,
+                            ),
                           ),
-                        ),
-                      ),
+                          child: const Center(
+                            child: Text(
+                              'G',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF4285F4),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   // Centered text

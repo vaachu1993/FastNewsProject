@@ -44,7 +44,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _toggleNotifications(bool value) async {
     final localizationProvider = LocalizationProvider.of(context);
     final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
-    final loc = AppLocalizations(currentLanguage);
 
     setState(() => _pushNotifications = value);
     await _notificationService.setNotificationsEnabled(value);
@@ -125,32 +124,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           _buildSimpleDivider(),
 
-          // Test Notification Button
-          _buildSimpleListTile(
-            icon: Icons.bug_report_outlined,
-            title: currentLanguage == 'vi' ? 'Test Thông Báo' : 'Test Notification',
-            subtitle: currentLanguage == 'vi'
-              ? 'Gửi thông báo thử nghiệm'
-              : 'Send a test notification',
-            onTap: () async {
-              await _notificationService.testNotification();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      currentLanguage == 'vi'
-                        ? '🧪 Đã gửi thông báo test! Hãy tap vào thông báo để kiểm tra.'
-                        : '🧪 Test notification sent! Tap on it to check.',
-                    ),
-                    backgroundColor: Colors.blue,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              }
-            },
-          ),
-
-          _buildSimpleDivider(),
 
           // Dark Mode
           Consumer<ThemeProvider>(
