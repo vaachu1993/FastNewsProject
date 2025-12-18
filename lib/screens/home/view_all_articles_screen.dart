@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/article_model.dart';
-import '../widgets/article_card_horizontal.dart';
-import '../services/rss_service.dart';
-import '../utils/app_localizations.dart';
-import '../widgets/localization_provider.dart';
+import '../../models/article_model.dart';
+import '../../widgets/article_card_horizontal.dart';
+import '../../services/rss_service.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/localization_provider.dart';
 
 class ViewAllArticlesScreen extends StatefulWidget {
   final String category;

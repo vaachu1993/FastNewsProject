@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/auth_service.dart';
-import '../utils/app_localizations.dart';
-import '../widgets/localization_provider.dart';
-import 'login_screen.dart';
+import '../../services/auth_service.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/localization_provider.dart';
+import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

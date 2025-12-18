@@ -40,72 +40,87 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            title: const Row(
-              children: [
-                Icon(Icons.email, color: Color(0xFF5A7D3C), size: 24),
-                SizedBox(width: 10),
-                Flexible(
-                  child: Text(
-                    'Email đã được gửi!',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-              ],
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+          builder: (dialogContext) {
+            final dialogIsDark = Theme.of(dialogContext).brightness == Brightness.dark;
+            return AlertDialog(
+              backgroundColor: Theme.of(dialogContext).cardColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
                 children: [
-                  const Text(
-                    'Link đặt lại mật khẩu đã được gửi đến:',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8F8F8),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                  const Icon(Icons.email, color: Color(0xFF5A7D3C), size: 24),
+                  const SizedBox(width: 10),
+                  Flexible(
                     child: Text(
-                      email,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF5A7D3C),
+                      'Email đã được gửi!',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Theme.of(dialogContext).textTheme.titleLarge?.color,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Vui lòng kiểm tra hộp thư và nhấn vào link để đặt lại mật khẩu.',
-                    style: TextStyle(fontSize: 14),
-                  ),
                 ],
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close dialog
-                  Navigator.of(context).pop(); // Back to login
-                },
-                child: const Text(
-                  'Đồng ý',
-                  style: TextStyle(
-                    color: Color(0xFF5A7D3C),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Link đặt lại mật khẩu đã được gửi đến:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(dialogContext).textTheme.bodyMedium?.color,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: dialogIsDark
+                            ? Colors.grey[800]
+                            : const Color(0xFFF8F8F8),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        email,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5A7D3C),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Vui lòng kiểm tra hộp thư và nhấn vào link để đặt lại mật khẩu.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(dialogContext).textTheme.bodyMedium?.color,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop(); // Close dialog
+                    Navigator.of(context).pop(); // Back to login
+                  },
+                  child: const Text(
+                    'Đồng ý',
+                    style: TextStyle(
+                      color: Color(0xFF5A7D3C),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       } else {
         // Hiện lỗi
@@ -131,13 +146,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF2C2C2C)),
+          icon: Icon(
+            Icons.arrow_back,
+            color: Theme.of(context).iconTheme.color,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -168,23 +188,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   const SizedBox(height: 32),
 
                   // Title
-                  const Text(
+                  Text(
                     'Quên mật khẩu?',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C2C2C),
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
 
                   const SizedBox(height: 16),
 
                   // Description
-                  const Text(
+                  Text(
                     'Nhập email của bạn để nhận link\nđặt lại mật khẩu',
                     style: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF808080),
+                      color: isDark ? Colors.grey[400] : const Color(0xFF808080),
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
@@ -196,6 +216,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Vui lòng nhập email';
@@ -207,16 +230,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     },
                     decoration: InputDecoration(
                       hintText: 'Email',
-                      hintStyle: const TextStyle(
-                        color: Color(0xFFB0B0B0),
+                      hintStyle: TextStyle(
+                        color: isDark ? Colors.grey[500] : const Color(0xFFB0B0B0),
                         fontSize: 15,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.email_outlined,
-                        color: Color(0xFF808080),
+                        color: isDark ? Colors.grey[400] : const Color(0xFF808080),
                       ),
                       filled: true,
-                      fillColor: const Color(0xFFF8F8F8),
+                      fillColor: isDark
+                          ? Colors.grey[800]
+                          : const Color(0xFFF8F8F8),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(28),
                         borderSide: BorderSide.none,

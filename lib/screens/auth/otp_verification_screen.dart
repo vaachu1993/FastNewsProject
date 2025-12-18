@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
-import '../services/otp_service.dart';
-import '../services/auth_service.dart';
-import 'topics_selection_screen.dart';
+import 'package:provider/provider.dart';
+import '../../services/otp_service.dart';
+import '../../services/auth_service.dart';
+import '../../providers/theme_provider.dart';
+import '../profile/topics_selection_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -222,13 +224,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -245,25 +251,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: isDarkMode ? Colors.blue.shade900.withOpacity(0.3) : Colors.blue.shade50,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.mail_outline,
                   size: 50,
-                  color: Colors.blue.shade600,
+                  color: isDarkMode ? Colors.blue.shade300 : Colors.blue.shade600,
                 ),
               ),
 
               const SizedBox(height: 30),
 
               // Title
-              const Text(
+              Text(
                 'Xác Thực Email',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: isDarkMode ? Colors.white : Colors.black87,
                 ),
               ),
 
@@ -275,17 +281,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade600,
+                  color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 widget.email,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.blue,
+                  color: isDarkMode ? Colors.blue.shade300 : Colors.blue,
                 ),
               ),
 
@@ -304,30 +310,38 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,
                       maxLength: 1,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black,
                       ),
                       decoration: InputDecoration(
                         counterText: '',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(
+                            color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                          borderSide: BorderSide(
+                            color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
+                          borderSide: BorderSide(
+                            color: isDarkMode ? Colors.blue.shade300 : Colors.blue,
+                            width: 2,
+                          ),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(color: Colors.red, width: 2),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade50,
                       ),
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
@@ -358,18 +372,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: isDarkMode ? Colors.red.shade900.withOpacity(0.3) : Colors.red.shade50,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
+                    border: Border.all(
+                      color: isDarkMode ? Colors.red.shade700 : Colors.red.shade200,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                      Icon(
+                        Icons.error_outline,
+                        color: isDarkMode ? Colors.red.shade300 : Colors.red.shade700,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage,
-                          style: TextStyle(color: Colors.red.shade700),
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.red.shade300 : Colors.red.shade700,
+                          ),
                         ),
                       ),
                     ],
@@ -383,8 +405,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: _remainingSeconds > 0
-                      ? Colors.blue.shade50
-                      : Colors.red.shade50,
+                      ? (isDarkMode ? Colors.blue.shade900.withOpacity(0.3) : Colors.blue.shade50)
+                      : (isDarkMode ? Colors.red.shade900.withOpacity(0.3) : Colors.red.shade50),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -393,7 +415,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     Icon(
                       Icons.timer_outlined,
                       size: 18,
-                      color: _remainingSeconds > 0 ? Colors.blue : Colors.red,
+                      color: _remainingSeconds > 0
+                          ? (isDarkMode ? Colors.blue.shade300 : Colors.blue)
+                          : (isDarkMode ? Colors.red.shade300 : Colors.red),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -401,7 +425,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           ? 'Mã hết hạn sau $_timerText'
                           : 'Mã đã hết hạn',
                       style: TextStyle(
-                        color: _remainingSeconds > 0 ? Colors.blue : Colors.red,
+                        color: _remainingSeconds > 0
+                            ? (isDarkMode ? Colors.blue.shade300 : Colors.blue)
+                            : (isDarkMode ? Colors.red.shade300 : Colors.red),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -452,7 +478,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 children: [
                   Text(
                     'Không nhận được mã? ',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                    ),
                   ),
                   TextButton(
                     onPressed: _isResending ? null : _resendOtp,
@@ -479,19 +507,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: isDarkMode ? Colors.grey.shade900 : Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(
+                    color: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade200,
+                  ),
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.grey.shade600, size: 20),
+                    Icon(
+                      Icons.info_outline,
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                      size: 20,
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Kiểm tra cả thư mục Spam nếu không thấy email',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
                         fontSize: 13,
                       ),
                     ),

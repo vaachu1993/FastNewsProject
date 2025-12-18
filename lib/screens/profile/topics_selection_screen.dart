@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'main_screen.dart';
+import 'package:provider/provider.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/localization_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../main/main_screen.dart';
 
 class TopicsSelectionScreen extends StatefulWidget {
   final bool isFromSettings; // True if opened from Settings, false if from registration
@@ -102,10 +106,14 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
   }
 
   Future<void> _saveTopicsAndContinue() async {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final l10n = AppLocalizations(currentLanguage);
+
     if (_selectedTopics.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one topic'),
+        SnackBar(
+          content: Text(l10n.selectAtLeastOne),
           backgroundColor: Colors.orange,
         ),
       );
@@ -146,7 +154,7 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
         // Hiển thị thông báo thành công
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Successfully saved ${_selectedTopics.length} topics!'),
+            content: Text(l10n.topicsSavedSuccess(_selectedTopics.length)),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -163,7 +171,7 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving topics: $e'),
+          content: Text(l10n.errorSavingTopics(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -184,8 +192,14 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localizationProvider = LocalizationProvider.of(context);
+    final currentLanguage = localizationProvider?.currentLanguage ?? 'vi';
+    final l10n = AppLocalizations(currentLanguage);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -195,30 +209,32 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  const Text(
-                    'Choose Your Interests',
+                  Text(
+                    l10n.chooseInterests,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C2C2C),
+                      color: isDark ? Colors.white : const Color(0xFF2C2C2C),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Select topics you\'re interested in to personalize your news feed',
+                    l10n.topicsPersonalizeDescription,
                     style: TextStyle(
                       fontSize: 15,
-                      color: Colors.grey[600],
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${_selectedTopics.length} selected',
+                    '${_selectedTopics.length} ${l10n.topicsSelected}',
                     style: TextStyle(
                       fontSize: 14,
-                      color: _selectedTopics.isEmpty ? Colors.grey : const Color(0xFF5A7D3C),
+                      color: _selectedTopics.isEmpty
+                          ? (isDark ? Colors.grey[600] : Colors.grey)
+                          : const Color(0xFF5A7D3C),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -259,7 +275,7 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28),
                         ),
-                        disabledBackgroundColor: Colors.grey[300],
+                        disabledBackgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
                       ),
                       child: _isLoading
                           ? const SizedBox(
@@ -270,9 +286,9 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text(
-                              'Continue',
-                              style: TextStyle(
+                          : Text(
+                              l10n.continueText,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -283,11 +299,11 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
                   // Skip Button
                   TextButton(
                     onPressed: _isLoading ? null : _skipForNow,
-                    child: const Text(
-                      'Skip for now',
+                    child: Text(
+                      l10n.skipForNow,
                       style: TextStyle(
                         fontSize: 15,
-                        color: Color(0xFF808080),
+                        color: isDark ? Colors.grey[400] : const Color(0xFF808080),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -302,6 +318,9 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
   }
 
   Widget _buildTopicChip(TopicModel topic, bool isSelected) {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isDark = themeProvider.isDarkMode;
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -316,10 +335,12 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? topic.color.withValues(alpha: 0.15) : Colors.white,
+          color: isSelected
+              ? topic.color.withValues(alpha: 0.15)
+              : (isDark ? const Color(0xFF2C2C2C) : Colors.white),
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: isSelected ? topic.color : const Color(0xFFE0E0E0),
+            color: isSelected ? topic.color : (isDark ? Colors.grey[700]! : const Color(0xFFE0E0E0)),
             width: isSelected ? 2 : 1.5,
           ),
         ),
@@ -331,7 +352,9 @@ class _TopicsSelectionScreenState extends State<TopicsSelectionScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? topic.color : const Color(0xFF2C2C2C),
+                color: isSelected
+                    ? topic.color
+                    : (isDark ? Colors.grey[300] : const Color(0xFF2C2C2C)),
               ),
             ),
             if (isSelected) ...[

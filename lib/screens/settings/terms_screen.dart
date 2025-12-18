@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../utils/app_localizations.dart';
-import '../widgets/localization_provider.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/localization_provider.dart';
 
 class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key});

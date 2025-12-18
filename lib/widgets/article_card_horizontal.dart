@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/article_model.dart';
-import '../screens/article_detail_screen.dart'; // 👈 để mở trang chi tiết
+import '../screens/home/article_detail_screen.dart'; // 👈 để mở trang chi tiết
 import '../utils/date_formatter.dart';
 import 'safe_network_image.dart';
 

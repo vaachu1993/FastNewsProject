@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/notification_history_model.dart';
-import '../models/article_model.dart';
-import '../services/notification_history_service.dart';
-import '../screens/article_detail_screen.dart';
-import '../utils/app_localizations.dart';
-import '../widgets/localization_provider.dart';
+import '../../models/notification_history_model.dart';
+import '../../models/article_model.dart';
+import '../../services/notification_history_service.dart';
+import '../home/article_detail_screen.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/localization_provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class NotificationHistoryScreen extends StatefulWidget {

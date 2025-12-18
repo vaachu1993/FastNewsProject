@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/article_model.dart';
-import '../widgets/article_card_horizontal.dart';
-import '../services/rss_service.dart';
-import '../utils/app_localizations.dart';
-import '../widgets/localization_provider.dart';
+import '../../models/article_model.dart';
+import '../../widgets/article_card_horizontal.dart';
+import '../../services/rss_service.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/localization_provider.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -84,11 +84,56 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     });
   }
 
-  void _searchArticles(String query) {
+  Future<void> _searchArticles(String query) async {
     setState(() {
       searchQuery = query;
-      filteredArticles = RssService.searchArticles(articles, query);
     });
+
+    // Nếu đang ở tab "Tất cả" hoặc "Mới nhất" và có search query
+    // → Tìm trong TẤT CẢ các danh mục
+    final currentCategory = tags[selectedTag];
+    if (query.trim().isNotEmpty &&
+        (currentCategory == 'Tất cả' || currentCategory == 'Mới nhất')) {
+
+      setState(() => isLoadingMore = true);
+
+      // Load tất cả bài viết từ TẤT CẢ các categories
+      List<ArticleModel> allArticles = [];
+      final allCategories = RssService.getCategories();
+
+      // Load song song tất cả categories
+      final futures = allCategories
+          .where((cat) => cat != 'Tất cả' && cat != 'Mới nhất') // Bỏ qua 2 category tổng hợp
+          .map((category) => RssService.fetchNewsByCategory(category));
+
+      final results = await Future.wait(futures);
+      for (var categoryArticles in results) {
+        allArticles.addAll(categoryArticles);
+      }
+
+      // Remove duplicates by ID
+      final uniqueArticles = <String, ArticleModel>{};
+      for (var article in allArticles) {
+        uniqueArticles[article.id] = article;
+      }
+      allArticles = uniqueArticles.values.toList();
+
+      // Sort by time (newest first)
+      allArticles.sort((a, b) => b.time.compareTo(a.time));
+
+      // Search trong tất cả bài viết
+      final searchResults = RssService.searchArticles(allArticles, query);
+
+      setState(() {
+        filteredArticles = searchResults;
+        isLoadingMore = false;
+      });
+    } else {
+      // Tìm trong category hiện tại
+      setState(() {
+        filteredArticles = RssService.searchArticles(articles, query);
+      });
+    }
   }
 
   String _translateCategory(String category, String currentLanguage) {
@@ -213,6 +258,32 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       onChanged: _searchArticles,
                     ),
                   ),
+                  // Info text when searching in "Tất cả" or "Mới nhất"
+                  if (searchQuery.isNotEmpty &&
+                      (tags[selectedTag] == 'Tất cả' || tags[selectedTag] == 'Mới nhất'))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: Colors.blue,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            currentLanguage == 'vi'
+                                ? 'Đang tìm trong tất cả danh mục...'
+                                : 'Searching across all categories...',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 20),
                   SizedBox(
                     height: 40,
@@ -281,6 +352,36 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
+                  // Loading indicator when searching
+                  if (isLoadingMore && searchQuery.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              currentLanguage == 'vi'
+                                  ? 'Đang tìm kiếm...'
+                                  : 'Searching...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Theme.of(context).textTheme.bodySmall?.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   AnimatedOpacity(
                     opacity: isLoadingMore ? 0.5 : 1.0,
                     duration: const Duration(milliseconds: 300),

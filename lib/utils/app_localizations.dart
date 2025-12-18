@@ -156,9 +156,16 @@ class AppLocalizations {
 
       // Topics Selection
       'select_topics': 'Chọn chủ đề yêu thích',
+      'choose_interests': 'Chọn sở thích của bạn',
       'topics_description': 'Chọn ít nhất 3 chủ đề để cá nhân hóa tin tức của bạn',
+      'topics_personalize_description': 'Chọn các chủ đề bạn quan tâm để cá nhân hóa nguồn cấp tin tức của bạn',
+      'topics_selected': 'đã chọn',
       'continue': 'Tiếp tục',
       'skip': 'Bỏ qua',
+      'skip_for_now': 'Bỏ qua',
+      'select_at_least_one': 'Vui lòng chọn ít nhất một chủ đề',
+      'topics_saved_success': 'Đã lưu thành công {count} chủ đề!',
+      'error_saving_topics': 'Lỗi khi lưu chủ đề: {error}',
 
       // Categories
       'category_all': 'Tất cả',
@@ -400,9 +407,16 @@ class AppLocalizations {
 
       // Topics Selection
       'select_topics': 'Select Favorite Topics',
+      'choose_interests': 'Choose Your Interests',
       'topics_description': 'Choose at least 3 topics to personalize your news feed',
+      'topics_personalize_description': 'Select topics you\'re interested in to personalize your news feed',
+      'topics_selected': 'selected',
       'continue': 'Continue',
       'skip': 'Skip',
+      'skip_for_now': 'Skip for now',
+      'select_at_least_one': 'Please select at least one topic',
+      'topics_saved_success': 'Successfully saved {count} topics!',
+      'error_saving_topics': 'Error saving topics: {error}',
 
       // Categories
       'category_all': 'All',
@@ -594,9 +608,16 @@ class AppLocalizations {
 
   // Topics Selection
   String get selectTopics => translate('select_topics');
+  String get chooseInterests => translate('choose_interests');
   String get topicsDescription => translate('topics_description');
+  String get topicsPersonalizeDescription => translate('topics_personalize_description');
+  String get topicsSelected => translate('topics_selected');
   String get continueText => translate('continue');
   String get skip => translate('skip');
+  String get skipForNow => translate('skip_for_now');
+  String get selectAtLeastOne => translate('select_at_least_one');
+  String topicsSavedSuccess(int count) => translate('topics_saved_success').replaceAll('{count}', count.toString());
+  String errorSavingTopics(String error) => translate('error_saving_topics').replaceAll('{error}', error);
 
   // Categories
   String get categoryAll => translate('category_all');

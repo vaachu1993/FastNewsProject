@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../models/article_model.dart';
-import '../services/firestore_service.dart';
+import '../../models/article_model.dart';
+import '../../services/firestore_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
-import '../utils/date_formatter.dart';
+import '../../utils/date_formatter.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
 import 'package:provider/provider.dart';
-import '../providers/theme_provider.dart';
-import '../widgets/article_summary_widget.dart';
+import '../../providers/theme_provider.dart';
+import '../../widgets/article_summary_widget.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final ArticleModel article;

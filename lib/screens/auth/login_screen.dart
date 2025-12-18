@@ -1,13 +1,13 @@
-import 'package:fastnews/screens/signup_screen.dart';
-import 'package:fastnews/screens/topics_selection_screen.dart';
-import 'package:fastnews/screens/email_login_screen.dart';
+import 'package:fastnews/screens/auth/signup_screen.dart';
+import 'package:fastnews/screens/profile/topics_selection_screen.dart';
+import 'package:fastnews/screens/auth/email_login_screen.dart';
 import 'package:fastnews/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import '../providers/theme_provider.dart';
-import 'main_screen.dart';
+import '../../providers/theme_provider.dart';
+import '../main/main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fastnews/services/auth_service.dart';
 import 'package:fastnews/services/otp_service.dart';
 import 'package:provider/provider.dart';
-import '../providers/theme_provider.dart';
+import '../../providers/theme_provider.dart';
 import 'login_screen.dart';
 import 'otp_verification_screen.dart';
 

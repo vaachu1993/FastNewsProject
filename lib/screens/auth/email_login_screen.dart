@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/auth_service.dart';
-import '../providers/theme_provider.dart';
-import 'main_screen.dart';
-import 'topics_selection_screen.dart';
+import '../../services/auth_service.dart';
+import '../../providers/theme_provider.dart';
+import '../main/main_screen.dart';
+import '../profile/topics_selection_screen.dart';
 import 'forgot_password_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';

@@ -208,13 +208,60 @@ class RssService {
   }
 
   // Tìm kiếm tin tức theo tiêu đề
+  /// Tìm kiếm bài viết theo từ khóa
+  /// Tìm trong: tiêu đề, mô tả, và nguồn
+  /// Hỗ trợ: nhiều từ khóa, tìm kiếm không dấu
   static List<ArticleModel> searchArticles(List<ArticleModel> articles, String query) {
-    if (query.isEmpty) return articles;
+    if (query.trim().isEmpty) return articles;
 
-    final lowerQuery = query.toLowerCase();
+    // Tách query thành các từ khóa riêng lẻ và normalize
+    final keywords = query.trim().toLowerCase().split(RegExp(r'\s+'));
+
     return articles.where((article) {
-      return article.title.toLowerCase().contains(lowerQuery);
+      // Chuẩn bị text để tìm kiếm (title + description + source)
+      final titleLower = article.title.toLowerCase();
+      final descLower = (article.description ?? '').toLowerCase();
+      final sourceLower = article.source.toLowerCase();
+
+      // Kết hợp tất cả nội dung để tìm kiếm
+      final searchableText = '$titleLower $descLower $sourceLower';
+
+      // Normalize Vietnamese (bỏ dấu) cho tìm kiếm linh hoạt hơn
+      final normalizedText = _removeVietnameseTones(searchableText);
+
+      // Kiểm tra xem TẤT CẢ các từ khóa có xuất hiện không
+      return keywords.every((keyword) {
+        final normalizedKeyword = _removeVietnameseTones(keyword);
+        return searchableText.contains(keyword) ||
+               normalizedText.contains(normalizedKeyword);
+      });
     }).toList();
+  }
+
+  /// Bỏ dấu tiếng Việt để hỗ trợ tìm kiếm linh hoạt
+  /// Ví dụ: "Việt Nam" -> "viet nam"
+  static String _removeVietnameseTones(String text) {
+    const vietnameseMap = {
+      'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+      'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+      'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+      'è': 'e', 'é': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+      'ê': 'e', 'ề': 'e', 'ế': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+      'ì': 'i', 'í': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+      'ò': 'o', 'ó': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+      'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+      'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+      'ù': 'u', 'ú': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+      'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+      'ỳ': 'y', 'ý': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+      'đ': 'd',
+    };
+
+    String result = text;
+    vietnameseMap.forEach((key, value) {
+      result = result.replaceAll(key, value);
+    });
+    return result;
   }
 
   // 📊 Thống kê và phân tích bài viết trùng lặp

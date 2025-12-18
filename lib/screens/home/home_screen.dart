@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/article_model.dart';
-import '../widgets/article_card_horizontal.dart';
-import '../services/rss_service.dart';
-import '../services/auth_service.dart';
-import '../services/firestore_service.dart';
-import '../services/notification_history_service.dart';
-import '../screens/notification_history_screen.dart';
-import '../screens/view_all_articles_screen.dart';
-import '../utils/app_localizations.dart';
-import '../widgets/localization_provider.dart';
+import '../../models/article_model.dart';
+import '../../widgets/article_card_horizontal.dart';
+import '../../services/rss_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/notification_history_service.dart';
+import '../history/notification_history_screen.dart';
+import 'view_all_articles_screen.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/localization_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onNavigateToProfile;

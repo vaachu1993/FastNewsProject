@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'home_screen.dart';
-import 'discover_screen.dart';
-import 'bookmark_screen.dart';
-import 'profile_screen.dart';
-import 'reading_history_screen.dart';
-import 'settings_screen.dart';
-import '../services/auth_service.dart';
-import '../services/rss_service.dart';
-import '../utils/app_localizations.dart';
-import '../widgets/localization_provider.dart';
+import '../home/home_screen.dart';
+import '../home/discover_screen.dart';
+import '../bookmark/bookmark_screen.dart';
+import '../profile/profile_screen.dart';
+import '../history/reading_history_screen.dart';
+import '../settings/settings_screen.dart';
+import '../../services/auth_service.dart';
+import '../../services/rss_service.dart';
+import '../../utils/app_localizations.dart';
+import '../../widgets/localization_provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

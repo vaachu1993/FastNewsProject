@@ -7,8 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
-import 'screens/login_screen.dart';
-import 'screens/main_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/main/main_screen.dart';
 import 'services/notification_service.dart';
 import 'services/fcm_service.dart';
 import 'services/auth_service.dart';
@@ -16,7 +16,7 @@ import 'services/localization_service.dart';
 import 'widgets/localization_provider.dart';
 import 'providers/theme_provider.dart';
 import 'models/article_model.dart';
-import 'screens/article_detail_screen.dart';
+import 'screens/home/article_detail_screen.dart';
 import 'dart:convert';
 
 // Global navigator key for navigation from notifications
